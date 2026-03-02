@@ -1,0 +1,31 @@
+markets:
+  - key: nasdaq_100
+    name: Nasdaq 100
+    index_ticker: "^NDX"
+    stock_suffix: ""
+    expected_constituents: 100
+  - key: sp500
+    name: S&P 500
+    index_ticker: "^GSPC"
+    stock_suffix: ""
+    expected_constituents: 500
+  - key: omxs30
+    name: OMXS30
+    index_ticker: "^OMXS30"
+    stock_suffix: ".ST"
+    expected_constituents: 30
+  - key: omxc25
+    name: OMXC25
+    index_ticker: "^OMXC25"
+    stock_suffix: ".CO"
+    expected_constituents: 25
+  - key: omxh25
+    name: OMXH25
+    index_ticker: "^OMXH25"
+    stock_suffix: ".HE"
+    expected_constituents: 25
+  - key: obx
+    name: OBX
+    index_ticker: "OBX.OL"
+    stock_suffix: ".OL"
+    expected_constituents: 25
