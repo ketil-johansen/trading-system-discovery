@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# mypy / typing / static analysis
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.pyright/
+.ruff_cache/
+
+# Environments
+.env
+.venv
+venv/
+
+# Editors / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Data files (market data cache — large, regenerable)
+data/
+*.parquet
+*.csv
+*.h5
+*.hdf5
+
+# Results (optimization outputs — regenerable)
+results/
+checkpoints/
+*.pkl
+*.pickle
+
+# Logs
+*.log
+logs/
+
+# Jupyter (if used for analysis)
+.ipynb_checkpoints/
+
+# Temp
+tmp/
+.temp/

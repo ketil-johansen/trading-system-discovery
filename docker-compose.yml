@@ -1,0 +1,31 @@
+services:
+    app:
+      build:
+        context: .
+        dockerfile: Dockerfile
+      volumes:
+        - ./tsd:/app/tsd
+        - ./tests:/app/tests
+        - ./scripts:/app/scripts
+        - ./config:/app/config:ro
+        - ./data:/app/data
+        - ./results:/app/results
+      environment:
+        - TSD_LOG_LEVEL=${TSD_LOG_LEVEL:-INFO}
+        - TSD_POPULATION_SIZE=${TSD_POPULATION_SIZE:-100}
+        - TSD_MAX_GENERATIONS=${TSD_MAX_GENERATIONS:-50}
+        - TSD_N_TRIALS=${TSD_N_TRIALS:-100}
+        - TSD_DATA_DIR=/app/data
+        - TSD_RESULTS_DIR=/app/results
+        - TSD_CONFIG_DIR=/app/config
+        - PYTHONDONTWRITEBYTECODE=1
+        - PYTHONUNBUFFERED=1
+      deploy:
+        resources:
+          limits:
+            cpus: "14"
+            memory: 22G
+          reservations:
+            cpus: "4"
+            memory: 8G
+      restart: "no"
