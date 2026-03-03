@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -9,7 +10,7 @@ import pytest
 
 from tsd.config import MarketConfig
 from tsd.data.constituents import load_constituents
-from tsd.data.downloader import OHLCV_COLUMNS, download_market, is_up_to_date
+from tsd.data.downloader import OHLCV_COLUMNS, download_market
 
 
 @pytest.mark.integration
@@ -71,23 +72,24 @@ class TestDownloadPipeline:
                 "yahoo_ticker": ["VOLV-B.ST"],
             }
         )
-        # First run — downloads
+        today = str(date.today())
+        # First run — downloads up to today so data is fresh
         download_market(
             market=market,
             constituents=constituents,
             data_dir=tmp_path,
             start="2024-01-01",
-            end="2024-12-31",
+            end=today,
             delay=0.0,
         )
 
-        # Second run — should skip
+        # Second run — should skip because last data point is recent
         results = download_market(
             market=market,
             constituents=constituents,
             data_dir=tmp_path,
             start="2024-01-01",
-            end="2024-12-31",
+            end=today,
             delay=0.0,
         )
         assert len(results) == 1

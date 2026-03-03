@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
 
 import pandas as pd
@@ -106,7 +107,7 @@ def scrape_nasdaq100() -> pd.DataFrame:
     return result.sort_values("ticker").reset_index(drop=True)
 
 
-_SCRAPERS: dict[str, object] = {
+_SCRAPERS: dict[str, Callable[[], pd.DataFrame]] = {
     "sp500": scrape_sp500,
     "nasdaq_100": scrape_nasdaq100,
 }
@@ -129,7 +130,7 @@ def refresh_constituents(market_key: str, data_dir: Path) -> pd.DataFrame:
     if scraper is not None:
         LOGGER.info("Scraping constituents for %s", market_key)
         try:
-            df = scraper()  # type: ignore[operator]
+            df = scraper()
             save_constituents(df, market_key, data_dir)
             return df
         except Exception:

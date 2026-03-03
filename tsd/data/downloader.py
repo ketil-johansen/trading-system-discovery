@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -85,9 +85,9 @@ def download_stock(yahoo_ticker: str, start: str, end: str) -> pd.DataFrame:
     if missing:
         msg = f"Missing columns {missing} in data for {yahoo_ticker}"
         raise ValueError(msg)
-    df = df[OHLCV_COLUMNS]
-    df.index.name = "Date"
-    return df
+    result: pd.DataFrame = df[OHLCV_COLUMNS]
+    result.index.name = "Date"
+    return result
 
 
 def save_stock_data(df: pd.DataFrame, market_key: str, ticker: str, data_dir: Path) -> Path:
@@ -138,10 +138,10 @@ def download_market(
     results: list[DownloadResult] = []
     total = len(constituents)
 
-    for idx, row in constituents.iterrows():
+    for position_idx, (_, row) in enumerate(constituents.iterrows()):
         ticker = str(row["ticker"])
         yahoo_ticker = str(row["yahoo_ticker"])
-        position = int(idx) + 1 if isinstance(idx, int) else results.__len__() + 1  # type: ignore[arg-type]
+        position = position_idx + 1
 
         parquet_path = data_dir / "raw" / market.key / f"{ticker}.parquet"
 
