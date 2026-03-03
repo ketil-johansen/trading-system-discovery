@@ -1,0 +1,31 @@
+ticker,name,yahoo_ticker
+ABB,ABB Ltd,ABB.ST
+ADDT-B,Addtech AB B,ADDT-B.ST
+ALFA,Alfa Laval AB,ALFA.ST
+ASSA-B,ASSA ABLOY AB,ASSA-B.ST
+ATCO-A,Atlas Copco AB A,ATCO-A.ST
+AZN,AstraZeneca PLC,AZN.ST
+BOL,Boliden AB,BOL.ST
+EPI-A,Epiroc AB A,EPI-A.ST
+EQT,EQT AB,EQT.ST
+ERIC-B,Ericsson B,ERIC-B.ST
+ESSITY-B,Essity AB B,ESSITY-B.ST
+EVO,Evolution AB,EVO.ST
+HEXA-B,Hexagon AB B,HEXA-B.ST
+HM-B,H&M Hennes & Mauritz AB B,HM-B.ST
+INDU-A,Industrivarden AB A,INDU-A.ST
+INVE-B,Investor AB B,INVE-B.ST
+LIFCO-B,Lifco AB B,LIFCO-B.ST
+NDA-SE,Nordea Bank Abp,NDA-SE.ST
+NIBE-B,NIBE Industrier AB B,NIBE-B.ST
+SAAB-B,Saab AB B,SAAB-B.ST
+SAND,Sandvik AB,SAND.ST
+SCA-B,Svenska Cellulosa AB B,SCA-B.ST
+SEB-A,SEB AB A,SEB-A.ST
+SHB-A,Svenska Handelsbanken AB A,SHB-A.ST
+SKA-B,Skanska AB B,SKA-B.ST
+SKF-B,SKF AB B,SKF-B.ST
+SWED-A,Swedbank AB A,SWED-A.ST
+TEL2-B,Tele2 AB B,TEL2-B.ST
+TELIA,Telia Company AB,TELIA.ST
+VOLV-B,AB Volvo B,VOLV-B.ST
