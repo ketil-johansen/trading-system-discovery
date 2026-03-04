@@ -30,7 +30,7 @@ Items near the top are better defined; items further down are rougher.
 
 ## Optimization (Phase 3–4)
 
-- [ ] **006 - GA engine (DEAP)** — Genetic algorithm with tournament
+- [x] **006 - GA engine (DEAP)** — Genetic algorithm with tournament
   selection, crossover, mutation, elitism. Parallel fitness evaluation
   across CPU cores. Checkpointing and resume.
 - [ ] **007 - Bayesian optimizer (Optuna)** — Optuna-based parameter
