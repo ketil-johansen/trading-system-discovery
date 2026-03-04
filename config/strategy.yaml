@@ -1,0 +1,32 @@
+# Strategy genome structure and exit parameter search spaces.
+# Defines how the GA/Optuna optimizers encode and search strategy space.
+
+genome:
+  num_entry_slots: 4
+  num_indicator_exit_slots: 1
+  num_filter_slots: 2
+  comparisons: [GT, LT, CROSS_ABOVE, CROSS_BELOW]
+  combination_logic: [AND, OR]
+
+exits:
+  stop_loss:
+    percent: { type: float, min: 0.5, max: 10.0, default: 3.0 }
+    atr_multiple: { type: float, min: 1.0, max: 4.0, default: 2.0 }
+  take_profit:
+    percent: { type: float, min: 1.0, max: 15.0, default: 5.0 }
+    atr_multiple: { type: float, min: 1.0, max: 6.0, default: 3.0 }
+  trailing_stop:
+    percent: { type: float, min: 0.5, max: 10.0, default: 2.0 }
+    atr_multiple: { type: float, min: 1.0, max: 4.0, default: 2.0 }
+    activation_percent: { type: float, min: 0.5, max: 10.0, default: 2.0 }
+  chandelier:
+    atr_multiple: { type: float, min: 1.0, max: 5.0, default: 3.0 }
+  breakeven:
+    trigger_percent: { type: float, min: 0.5, max: 10.0, default: 2.0 }
+    trigger_atr_multiple: { type: float, min: 0.5, max: 4.0, default: 1.5 }
+
+time_exits:
+  max_days: { type: int, min: 1, max: 30, default: 10 }
+  weekday: { type: int, min: 0, max: 4, default: 4 }
+  stagnation_days: { type: int, min: 2, max: 15, default: 5 }
+  stagnation_threshold: { type: float, min: 0.1, max: 5.0, default: 1.0 }
