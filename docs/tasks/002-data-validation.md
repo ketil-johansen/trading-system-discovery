@@ -1,6 +1,6 @@
 # TaskSpec: 002 - Data validation and quality checks
 
-Status: draft
+Status: implemented
 
 ## Objective
 
@@ -73,21 +73,21 @@ demand.
 
 ## Acceptance Criteria (must be testable)
 
-- [ ] `validate_stock()` detects missing columns and returns FAIL.
-- [ ] `validate_stock()` detects null values and reports count.
-- [ ] `validate_stock()` detects OHLC ordering violations and reports count.
-- [ ] `validate_stock()` detects gaps > threshold and reports them.
-- [ ] `validate_stock()` flags outlier returns exceeding threshold.
-- [ ] `validate_stock()` returns PASS for clean synthetic data.
-- [ ] `validate_market()` aggregates per-stock results into a summary.
-- [ ] `save_report()` writes valid JSON to `data/reports/`.
-- [ ] `scripts/check_data_quality.py --market omxs30` runs and prints
+- [x] `validate_stock()` detects missing columns and returns FAIL.
+- [x] `validate_stock()` detects null values and reports count.
+- [x] `validate_stock()` detects OHLC ordering violations and reports count.
+- [x] `validate_stock()` detects gaps > threshold and reports them.
+- [x] `validate_stock()` flags outlier returns exceeding threshold.
+- [x] `validate_stock()` returns PASS for clean synthetic data.
+- [x] `validate_market()` aggregates per-stock results into a summary.
+- [x] `save_report()` writes valid JSON to `data/reports/`.
+- [x] `scripts/check_data_quality.py --market omxs30` runs and prints
   summary.
-- [ ] All unit tests pass: `pytest tests/unit/test_quality.py -v`
-- [ ] Integration test passes: `pytest tests/integration/test_quality_pipeline.py -v`
-- [ ] `ruff check tsd/ scripts/ tests/` passes with no errors.
-- [ ] `ruff format --check tsd/ scripts/ tests/` passes.
-- [ ] `mypy tsd/` passes with no errors.
+- [x] All unit tests pass: `pytest tests/unit/test_quality.py -v`
+- [x] Integration test passes: `pytest tests/integration/test_quality_pipeline.py -v`
+- [x] `ruff check tsd/ scripts/ tests/` passes with no errors.
+- [x] `ruff format --check tsd/ scripts/ tests/` passes.
+- [x] `mypy tsd/` passes with no errors.
 
 ## Verification
 
