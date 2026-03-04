@@ -1,5 +1,12 @@
 """Strategy encoding and evaluation."""
 
+from tsd.strategy.evaluator import (
+    BacktestMetrics,
+    BacktestResult,
+    EvaluatorConfig,
+    TradeRecord,
+    run_backtest,
+)
 from tsd.strategy.execution import (
     ENTRY_TIMING,
     EXIT_TIMING_INDICATOR,
@@ -41,7 +48,10 @@ from tsd.strategy.genome import (
 from tsd.strategy.signals import apply_condition, generate_entry_signals
 
 __all__ = [
+    "BacktestMetrics",
+    "BacktestResult",
     "ENTRY_TIMING",
+    "EvaluatorConfig",
     "EXIT_TIMING_INDICATOR",
     "EXIT_TIMING_LIMIT",
     "EXIT_TIMING_TIME",
@@ -57,6 +67,7 @@ __all__ = [
     "StrategyMeta",
     "TakeProfitConfig",
     "TimeExitGene",
+    "TradeRecord",
     "TrailingStopConfig",
     "apply_condition",
     "check_limit_exit",
@@ -73,6 +84,7 @@ __all__ = [
     "genome_to_flat",
     "load_strategy_config",
     "random_genome",
+    "run_backtest",
     "shift_to_next_open",
     "validate_genome",
 ]
