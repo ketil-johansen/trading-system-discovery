@@ -1,25 +1,42 @@
 # Indicator parameter metadata for GA/Optuna search spaces.
-# Each indicator defines its category and tunable parameters
-# with type, min, max, and default values.
+# Each indicator defines its category, output type metadata, and tunable
+# parameters with type, min, max, and default values.
+#
+# output_type values:
+#   price_level — tracks price (e.g. SMA, EMA)
+#   oscillator  — bounded numeric range (e.g. RSI 0–100)
+#   binary      — 0 or 1 (e.g. price_vs_ma filter)
+#   direction   — directional signal (e.g. supertrend direction)
 
 # --- Trend indicators ---
 sma:
   category: trend
+  outputs:
+    sma: { output_type: price_level }
   params:
     period: { type: int, min: 5, max: 200, default: 20 }
 
 ema:
   category: trend
+  outputs:
+    ema: { output_type: price_level }
   params:
     period: { type: int, min: 5, max: 200, default: 20 }
 
 hma:
   category: trend
+  outputs:
+    hma: { output_type: price_level }
   params:
     period: { type: int, min: 5, max: 200, default: 20 }
 
 ichimoku:
   category: trend
+  outputs:
+    conversion: { output_type: price_level }
+    base: { output_type: price_level }
+    span_a: { output_type: price_level }
+    span_b: { output_type: price_level }
   params:
     tenkan: { type: int, min: 5, max: 30, default: 9 }
     kijun: { type: int, min: 15, max: 60, default: 26 }
@@ -27,6 +44,9 @@ ichimoku:
 
 supertrend:
   category: trend
+  outputs:
+    supertrend: { output_type: price_level }
+    direction: { output_type: direction, threshold_min: -1, threshold_max: 1 }
   params:
     period: { type: int, min: 5, max: 40, default: 10 }
     multiplier: { type: float, min: 1.0, max: 5.0, default: 3.0 }
@@ -34,11 +54,16 @@ supertrend:
 # --- Momentum indicators ---
 rsi:
   category: momentum
+  outputs:
+    rsi: { output_type: oscillator, threshold_min: 0, threshold_max: 100 }
   params:
     period: { type: int, min: 5, max: 30, default: 14 }
 
 stochastic:
   category: momentum
+  outputs:
+    k: { output_type: oscillator, threshold_min: 0, threshold_max: 100 }
+    d: { output_type: oscillator, threshold_min: 0, threshold_max: 100 }
   params:
     k_period: { type: int, min: 5, max: 30, default: 14 }
     d_period: { type: int, min: 3, max: 10, default: 3 }
@@ -46,6 +71,10 @@ stochastic:
 
 macd:
   category: momentum
+  outputs:
+    macd: { output_type: price_level }
+    signal: { output_type: price_level }
+    histogram: { output_type: oscillator, threshold_min: -10, threshold_max: 10 }
   params:
     fast: { type: int, min: 5, max: 20, default: 12 }
     slow: { type: int, min: 15, max: 40, default: 26 }
@@ -53,23 +82,39 @@ macd:
 
 williams_r:
   category: momentum
+  outputs:
+    williams_r: { output_type: oscillator, threshold_min: -100, threshold_max: 0 }
   params:
     period: { type: int, min: 5, max: 30, default: 14 }
 
 # --- Volatility indicators ---
 atr:
   category: volatility
+  outputs:
+    atr: { output_type: price_level }
   params:
     period: { type: int, min: 5, max: 30, default: 14 }
 
 bollinger:
   category: volatility
+  outputs:
+    mavg: { output_type: price_level }
+    upper: { output_type: price_level }
+    lower: { output_type: price_level }
+    pband: { output_type: oscillator, threshold_min: 0, threshold_max: 1 }
+    wband: { output_type: oscillator, threshold_min: 0, threshold_max: 1 }
   params:
     period: { type: int, min: 10, max: 50, default: 20 }
     std_dev: { type: float, min: 1.0, max: 4.0, default: 2.0 }
 
 keltner:
   category: volatility
+  outputs:
+    mband: { output_type: price_level }
+    upper: { output_type: price_level }
+    lower: { output_type: price_level }
+    pband: { output_type: oscillator, threshold_min: 0, threshold_max: 1 }
+    wband: { output_type: oscillator, threshold_min: 0, threshold_max: 1 }
   params:
     ema_period: { type: int, min: 10, max: 50, default: 20 }
     atr_period: { type: int, min: 5, max: 30, default: 10 }
@@ -78,21 +123,30 @@ keltner:
 # --- Volume indicators ---
 obv:
   category: volume
+  outputs:
+    obv: { output_type: price_level }
   params: {}
 
 cmf:
   category: volume
+  outputs:
+    cmf: { output_type: oscillator, threshold_min: -1, threshold_max: 1 }
   params:
     period: { type: int, min: 10, max: 40, default: 20 }
 
 # --- Filters ---
 price_vs_ma:
   category: filter
+  outputs:
+    filter: { output_type: binary, threshold_min: 0, threshold_max: 1 }
   params:
     ma_period: { type: int, min: 50, max: 300, default: 200 }
 
 volatility_regime:
   category: filter
+  outputs:
+    regime: { output_type: direction, threshold_min: 0, threshold_max: 1 }
+    ratio: { output_type: oscillator, threshold_min: 0, threshold_max: 3 }
   params:
     atr_period: { type: int, min: 5, max: 30, default: 14 }
     lookback: { type: int, min: 20, max: 120, default: 60 }
