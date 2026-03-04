@@ -21,9 +21,10 @@ Items near the top are better defined; items further down are rougher.
 - [x] **004 - Strategy genome and signal generation** — Strategy DNA
   encoding with parameter genes and binary switches, signal generation
   from genome, exit types (all 3 categories), execution timing rules.
-- [ ] **005 - Backtest evaluator and fitness function** — vectorbt-based
-  backtest runner with correct execution timing (§3), per-trade metrics,
-  win-rate fitness with profitability gate and cost model.
+- [x] **005 - Backtest evaluator and fitness function** — Custom bar-by-bar
+  backtest engine with correct execution timing (§3), per-trade metrics,
+  20 aggregate BacktestMetrics, win-rate fitness with profitability gate
+  and cost model.
 - [ ] **005b - Remaining indicators** — Complete the full ~55 indicator
   universe. Can be done any time after 003.
 
