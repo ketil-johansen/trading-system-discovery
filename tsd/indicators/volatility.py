@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 from ta.volatility import AverageTrueRange, BollingerBands, KeltnerChannel
 
-from tsd.indicators.base import IndicatorFn, IndicatorResult
+from tsd.indicators.base import IndicatorFn, IndicatorResult, nan_series
 
 
 def atr(df: pd.DataFrame, period: int = 14) -> IndicatorResult:
@@ -15,9 +15,9 @@ def atr(df: pd.DataFrame, period: int = 14) -> IndicatorResult:
         df: DataFrame with 'High', 'Low', 'Close' columns.
         period: ATR lookback period.
     """
-    indicator = AverageTrueRange(
-        high=df["High"], low=df["Low"], close=df["Close"], window=period
-    )
+    if len(df) < period:
+        return IndicatorResult(name="atr", values={"atr": nan_series(df.index)}, params={"period": period})
+    indicator = AverageTrueRange(high=df["High"], low=df["Low"], close=df["Close"], window=period)
     return IndicatorResult(
         name="atr",
         values={"atr": indicator.average_true_range()},
@@ -33,6 +33,13 @@ def bollinger(df: pd.DataFrame, period: int = 20, std_dev: float = 2.0) -> Indic
         period: Moving average period.
         std_dev: Standard deviation multiplier.
     """
+    if len(df) < period:
+        nan = nan_series(df.index)
+        return IndicatorResult(
+            name="bollinger",
+            values={"mavg": nan, "upper": nan.copy(), "lower": nan.copy(), "pband": nan.copy(), "wband": nan.copy()},
+            params={"period": period, "std_dev": std_dev},
+        )
     indicator = BollingerBands(close=df["Close"], window=period, window_dev=std_dev)
     return IndicatorResult(
         name="bollinger",
@@ -47,9 +54,7 @@ def bollinger(df: pd.DataFrame, period: int = 20, std_dev: float = 2.0) -> Indic
     )
 
 
-def keltner(
-    df: pd.DataFrame, ema_period: int = 20, atr_period: int = 10, multiplier: float = 1.5
-) -> IndicatorResult:
+def keltner(df: pd.DataFrame, ema_period: int = 20, atr_period: int = 10, multiplier: float = 1.5) -> IndicatorResult:
     """Keltner Channels.
 
     Args:
@@ -58,6 +63,14 @@ def keltner(
         atr_period: ATR period for band width.
         multiplier: ATR multiplier.
     """
+    min_period = max(ema_period, atr_period)
+    if len(df) < min_period:
+        nan = nan_series(df.index)
+        return IndicatorResult(
+            name="keltner",
+            values={"mband": nan, "upper": nan.copy(), "lower": nan.copy(), "pband": nan.copy(), "wband": nan.copy()},
+            params={"ema_period": ema_period, "atr_period": atr_period, "multiplier": multiplier},
+        )
     indicator = KeltnerChannel(
         high=df["High"],
         low=df["Low"],

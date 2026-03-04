@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
+import numpy as np
 import pandas as pd
 import yaml
 
@@ -108,6 +110,15 @@ def load_indicator_config(config_dir: Path) -> tuple[IndicatorMeta, ...]:
     return tuple(indicators)
 
 
+def nan_series(index: pd.Index) -> pd.Series:
+    """Return a NaN-filled Series matching the given index.
+
+    Args:
+        index: Index to use for the resulting Series.
+    """
+    return pd.Series(np.nan, index=index)
+
+
 # Type alias for indicator functions
 IndicatorFn = Callable[..., IndicatorResult]
 
@@ -125,11 +136,11 @@ def _get_registry() -> dict[str, IndicatorFn]:
     if _REGISTRY is not None:
         return _REGISTRY
 
-    from tsd.indicators.filters import INDICATORS as filters_indicators
-    from tsd.indicators.momentum import INDICATORS as momentum_indicators
-    from tsd.indicators.trend import INDICATORS as trend_indicators
-    from tsd.indicators.volatility import INDICATORS as volatility_indicators
-    from tsd.indicators.volume import INDICATORS as volume_indicators
+    from tsd.indicators.filters import INDICATORS as filters_indicators  # noqa: PLC0415
+    from tsd.indicators.momentum import INDICATORS as momentum_indicators  # noqa: PLC0415
+    from tsd.indicators.trend import INDICATORS as trend_indicators  # noqa: PLC0415
+    from tsd.indicators.volatility import INDICATORS as volatility_indicators  # noqa: PLC0415
+    from tsd.indicators.volume import INDICATORS as volume_indicators  # noqa: PLC0415
 
     registry: dict[str, IndicatorFn] = {}
     registry.update(trend_indicators)
@@ -142,9 +153,7 @@ def _get_registry() -> dict[str, IndicatorFn]:
     return _REGISTRY
 
 
-def compute_indicator(
-    name: str, df: pd.DataFrame, params: dict[str, Any]
-) -> IndicatorResult:
+def compute_indicator(name: str, df: pd.DataFrame, params: dict[str, Any]) -> IndicatorResult:
     """Compute an indicator by name.
 
     Args:
@@ -163,7 +172,7 @@ def compute_indicator(
         msg = f"Unknown indicator '{name}'. Available: {sorted(registry.keys())}"
         raise KeyError(msg)
     fn = registry[name]
-    return fn(df, **params)  # type: ignore[call-arg]
+    return fn(df, **params)
 
 
 def get_indicator_names() -> list[str]:

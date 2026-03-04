@@ -11,12 +11,10 @@ import pytest
 from tsd.indicators.base import (
     IndicatorMeta,
     IndicatorResult,
-    ParamMeta,
     compute_indicator,
     get_indicator_names,
     load_indicator_config,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -71,16 +69,12 @@ class TestIndicatorResult:
     """Tests for the IndicatorResult frozen dataclass."""
 
     def test_frozen(self, ohlcv_df: pd.DataFrame) -> None:
-        result = IndicatorResult(
-            name="test", values={"a": ohlcv_df["Close"]}, params={"period": 14}
-        )
+        result = IndicatorResult(name="test", values={"a": ohlcv_df["Close"]}, params={"period": 14})
         with pytest.raises(AttributeError):
             result.name = "changed"  # type: ignore[misc]
 
     def test_values_accessible(self, ohlcv_df: pd.DataFrame) -> None:
-        result = IndicatorResult(
-            name="test", values={"a": ohlcv_df["Close"]}, params={"period": 14}
-        )
+        result = IndicatorResult(name="test", values={"a": ohlcv_df["Close"]}, params={"period": 14})
         assert "a" in result.values
         assert len(result.values["a"]) == len(ohlcv_df)
 
@@ -173,9 +167,22 @@ class TestRegistry:
     def test_expected_indicator_names(self) -> None:
         names = get_indicator_names()
         expected = [
-            "atr", "bollinger", "cmf", "ema", "hma", "ichimoku", "keltner",
-            "macd", "obv", "price_vs_ma", "rsi", "sma", "stochastic",
-            "supertrend", "volatility_regime", "williams_r",
+            "atr",
+            "bollinger",
+            "cmf",
+            "ema",
+            "hma",
+            "ichimoku",
+            "keltner",
+            "macd",
+            "obv",
+            "price_vs_ma",
+            "rsi",
+            "sma",
+            "stochastic",
+            "supertrend",
+            "volatility_regime",
+            "williams_r",
         ]
         assert names == expected
 
@@ -357,18 +364,14 @@ class TestAllIndicatorsCommonProperties:
         for name in get_indicator_names():
             result = compute_indicator(name, ohlcv_df, {})
             for key, series in result.values.items():
-                assert len(series) == len(ohlcv_df), (
-                    f"{name}.{key} length {len(series)} != {len(ohlcv_df)}"
-                )
+                assert len(series) == len(ohlcv_df), f"{name}.{key} length {len(series)} != {len(ohlcv_df)}"
 
     def test_all_handle_short_data(self, short_df: pd.DataFrame) -> None:
         for name in get_indicator_names():
             result = compute_indicator(name, short_df, {})
             assert isinstance(result, IndicatorResult), f"{name} crashed on short data"
             for key, series in result.values.items():
-                assert len(series) == len(short_df), (
-                    f"{name}.{key} length mismatch on short data"
-                )
+                assert len(series) == len(short_df), f"{name}.{key} length mismatch on short data"
 
     def test_name_matches_key(self, ohlcv_df: pd.DataFrame) -> None:
         for name in get_indicator_names():

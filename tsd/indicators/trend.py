@@ -9,7 +9,7 @@ import pandas as pd
 from ta.trend import EMAIndicator, IchimokuIndicator, SMAIndicator
 from ta.volatility import AverageTrueRange
 
-from tsd.indicators.base import IndicatorFn, IndicatorResult
+from tsd.indicators.base import IndicatorFn, IndicatorResult, nan_series
 
 
 def sma(df: pd.DataFrame, period: int = 20) -> IndicatorResult:
@@ -75,9 +75,7 @@ def hma(df: pd.DataFrame, period: int = 20) -> IndicatorResult:
     )
 
 
-def ichimoku(
-    df: pd.DataFrame, tenkan: int = 9, kijun: int = 26, senkou_b: int = 52
-) -> IndicatorResult:
+def ichimoku(df: pd.DataFrame, tenkan: int = 9, kijun: int = 26, senkou_b: int = 52) -> IndicatorResult:
     """Ichimoku Cloud.
 
     Args:
@@ -86,9 +84,7 @@ def ichimoku(
         kijun: Kijun-sen (base line) period.
         senkou_b: Senkou Span B period.
     """
-    indicator = IchimokuIndicator(
-        high=df["High"], low=df["Low"], window1=tenkan, window2=kijun, window3=senkou_b
-    )
+    indicator = IchimokuIndicator(high=df["High"], low=df["Low"], window1=tenkan, window2=kijun, window3=senkou_b)
     return IndicatorResult(
         name="ichimoku",
         values={
@@ -101,9 +97,40 @@ def ichimoku(
     )
 
 
-def supertrend(
-    df: pd.DataFrame, period: int = 10, multiplier: float = 3.0
-) -> IndicatorResult:
+def _supertrend_step(
+    i: int,
+    close: pd.Series,
+    upper_band: pd.Series,
+    lower_band: pd.Series,
+    direction: np.ndarray,  # type: ignore[type-arg]
+    st: np.ndarray,  # type: ignore[type-arg]
+) -> None:
+    """Compute one step of the supertrend algorithm in-place."""
+    # Adjust upper band
+    if not np.isnan(upper_band.iloc[i - 1]):
+        should_tighten = not (upper_band.iloc[i] > upper_band.iloc[i - 1] and direction[i - 1] == -1.0)
+        if should_tighten and close.iloc[i - 1] <= upper_band.iloc[i - 1]:
+            upper_band.iloc[i] = min(upper_band.iloc[i], upper_band.iloc[i - 1])
+
+    # Adjust lower band
+    if not np.isnan(lower_band.iloc[i - 1]):
+        should_tighten = not (lower_band.iloc[i] < lower_band.iloc[i - 1] and direction[i - 1] == 1.0)
+        if should_tighten and close.iloc[i - 1] >= lower_band.iloc[i - 1]:
+            lower_band.iloc[i] = max(lower_band.iloc[i], lower_band.iloc[i - 1])
+
+    # Determine direction
+    if direction[i - 1] == 1.0:
+        direction[i] = -1.0 if close.iloc[i] < lower_band.iloc[i] else 1.0
+    elif close.iloc[i] > upper_band.iloc[i]:
+        direction[i] = 1.0
+    else:
+        direction[i] = -1.0
+
+    # Set supertrend value
+    st[i] = lower_band.iloc[i] if direction[i] == 1.0 else upper_band.iloc[i]
+
+
+def supertrend(df: pd.DataFrame, period: int = 10, multiplier: float = 3.0) -> IndicatorResult:
     """Supertrend indicator.
 
     Uses ATR bands with direction flip logic.
@@ -113,9 +140,15 @@ def supertrend(
         period: ATR period.
         multiplier: ATR multiplier for band width.
     """
-    atr_indicator = AverageTrueRange(
-        high=df["High"], low=df["Low"], close=df["Close"], window=period
-    )
+    if len(df) < period:
+        nan = nan_series(df.index)
+        return IndicatorResult(
+            name="supertrend",
+            values={"supertrend": nan, "direction": nan.copy()},
+            params={"period": period, "multiplier": multiplier},
+        )
+
+    atr_indicator = AverageTrueRange(high=df["High"], low=df["Low"], close=df["Close"], window=period)
     atr_values = atr_indicator.average_true_range()
 
     hl2 = (df["High"] + df["Low"]) / 2
@@ -129,37 +162,7 @@ def supertrend(
     for i in range(1, n):
         if np.isnan(upper_band.iloc[i]) or np.isnan(lower_band.iloc[i]):
             continue
-
-        # Adjust bands based on previous values
-        if not np.isnan(upper_band.iloc[i - 1]):
-            if upper_band.iloc[i] > upper_band.iloc[i - 1] and direction[i - 1] == -1.0:
-                pass
-            elif df["Close"].iloc[i - 1] <= upper_band.iloc[i - 1]:
-                upper_band.iloc[i] = min(upper_band.iloc[i], upper_band.iloc[i - 1])
-
-        if not np.isnan(lower_band.iloc[i - 1]):
-            if lower_band.iloc[i] < lower_band.iloc[i - 1] and direction[i - 1] == 1.0:
-                pass
-            elif df["Close"].iloc[i - 1] >= lower_band.iloc[i - 1]:
-                lower_band.iloc[i] = max(lower_band.iloc[i], lower_band.iloc[i - 1])
-
-        # Determine direction
-        if direction[i - 1] == 1.0:
-            if df["Close"].iloc[i] < lower_band.iloc[i]:
-                direction[i] = -1.0
-            else:
-                direction[i] = 1.0
-        else:
-            if df["Close"].iloc[i] > upper_band.iloc[i]:
-                direction[i] = 1.0
-            else:
-                direction[i] = -1.0
-
-        # Set supertrend value
-        if direction[i] == 1.0:
-            st[i] = lower_band.iloc[i]
-        else:
-            st[i] = upper_band.iloc[i]
+        _supertrend_step(i, df["Close"], upper_band, lower_band, direction, st)
 
     return IndicatorResult(
         name="supertrend",

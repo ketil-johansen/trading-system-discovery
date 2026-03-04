@@ -6,7 +6,7 @@ import pandas as pd
 from ta.trend import SMAIndicator
 from ta.volatility import AverageTrueRange
 
-from tsd.indicators.base import IndicatorFn, IndicatorResult
+from tsd.indicators.base import IndicatorFn, IndicatorResult, nan_series
 
 
 def price_vs_ma(df: pd.DataFrame, ma_period: int = 200) -> IndicatorResult:
@@ -47,9 +47,20 @@ def volatility_regime(
         low_threshold: Ratio below this is low volatility.
         high_threshold: Ratio above this is high volatility.
     """
-    atr_indicator = AverageTrueRange(
-        high=df["High"], low=df["Low"], close=df["Close"], window=atr_period
-    )
+    if len(df) < atr_period:
+        nan = nan_series(df.index)
+        return IndicatorResult(
+            name="volatility_regime",
+            values={"regime": nan, "ratio": nan.copy()},
+            params={
+                "atr_period": atr_period,
+                "lookback": lookback,
+                "low_threshold": low_threshold,
+                "high_threshold": high_threshold,
+            },
+        )
+
+    atr_indicator = AverageTrueRange(high=df["High"], low=df["Low"], close=df["Close"], window=atr_period)
     atr_values = atr_indicator.average_true_range()
     atr_mean = atr_values.rolling(window=lookback).mean()
     ratio = atr_values / atr_mean

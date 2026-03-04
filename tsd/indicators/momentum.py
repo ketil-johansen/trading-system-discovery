@@ -24,9 +24,7 @@ def rsi(df: pd.DataFrame, period: int = 14) -> IndicatorResult:
     )
 
 
-def stochastic(
-    df: pd.DataFrame, k_period: int = 14, d_period: int = 3, smooth_k: int = 3
-) -> IndicatorResult:
+def stochastic(df: pd.DataFrame, k_period: int = 14, d_period: int = 3, smooth_k: int = 3) -> IndicatorResult:
     """Stochastic Oscillator.
 
     Args:
@@ -54,9 +52,7 @@ def stochastic(
     )
 
 
-def macd(
-    df: pd.DataFrame, fast: int = 12, slow: int = 26, signal: int = 9
-) -> IndicatorResult:
+def macd(df: pd.DataFrame, fast: int = 12, slow: int = 26, signal: int = 9) -> IndicatorResult:
     """Moving Average Convergence Divergence.
 
     Args:
@@ -65,9 +61,7 @@ def macd(
         slow: Slow EMA period.
         signal: Signal line period.
     """
-    indicator = MACDIndicator(
-        close=df["Close"], window_fast=fast, window_slow=slow, window_sign=signal
-    )
+    indicator = MACDIndicator(close=df["Close"], window_fast=fast, window_slow=slow, window_sign=signal)
     return IndicatorResult(
         name="macd",
         values={
@@ -86,9 +80,7 @@ def williams_r(df: pd.DataFrame, period: int = 14) -> IndicatorResult:
         df: DataFrame with 'High', 'Low', 'Close' columns.
         period: Lookback period.
     """
-    indicator = WilliamsRIndicator(
-        high=df["High"], low=df["Low"], close=df["Close"], lbp=period
-    )
+    indicator = WilliamsRIndicator(high=df["High"], low=df["Low"], close=df["Close"], lbp=period)
     return IndicatorResult(
         name="williams_r",
         values={"williams_r": indicator.williams_r()},
