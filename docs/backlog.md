@@ -12,35 +12,53 @@ Items near the top are better defined; items further down are rougher.
   data integrity, compute derived features via pandas_ta, handle edge
   cases (gaps, holidays, delistings).
 
-## Optimization Core
+## Indicators & Backtesting (Phase 2)
 
-- [ ] **003 - GA engine (DEAP)** — Genetic algorithm with configurable
-  chromosome encoding for strategy parameters, tournament selection,
-  crossover, mutation. Parallel fitness evaluation across CPU cores.
-- [ ] **004 - Bayesian optimizer (Optuna)** — Optuna-based parameter
-  search with pruning, study persistence for checkpoint/resume.
-- [ ] **005 - Strategy evaluation harness** — vectorbt-based backtest
-  runner that takes parameter sets and returns fitness metrics (Sharpe,
-  max drawdown, profit factor).
+- [x] **003 - Indicator library (core subset)** — Base indicator
+  interface, parameter metadata from `config/indicators.yaml`, and
+  16 core indicators across all 6 categories (trend, momentum,
+  volatility, volume, regime filters) using the `ta` library.
+- [ ] **004 - Strategy genome and signal generation** — Strategy DNA
+  encoding with parameter genes and binary switches, signal generation
+  from genome, exit types (all 3 categories), execution timing rules.
+- [ ] **005 - Backtest evaluator and fitness function** — vectorbt-based
+  backtest runner with correct execution timing (§3), per-trade metrics,
+  win-rate fitness with profitability gate and cost model.
+- [ ] **005b - Remaining indicators** — Complete the full ~55 indicator
+  universe. Can be done any time after 003.
 
-## Validation
+## Optimization (Phase 3–4)
 
-- [ ] **006 - Walk-forward validation** — Rolling window out-of-sample
-  validation to detect overfitting. Configurable window sizes and step
-  sizes.
-- [ ] **007 - Statistical significance testing** — Monte Carlo
+- [ ] **006 - GA engine (DEAP)** — Genetic algorithm with tournament
+  selection, crossover, mutation, elitism. Parallel fitness evaluation
+  across CPU cores. Checkpointing and resume.
+- [ ] **007 - Bayesian optimizer (Optuna)** — Optuna-based parameter
+  fine-tuning with TPE sampler, median pruner, study persistence.
+- [ ] **008 - Staged pipeline** — GA → Optuna pipeline with configurable
+  modes (ga_only, bayesian_only, both).
+
+## Validation (Phase 5)
+
+- [ ] **009 - Walk-forward validation** — Anchored walk-forward engine
+  with growing in-sample, 6-month OOS windows, final holdout. Passing
+  criteria evaluation.
+- [ ] **010 - Statistical significance testing** — Monte Carlo
   permutation tests, bootstrap confidence intervals on strategy metrics.
 
-## Reporting
+## Reporting (Phase 6)
 
-- [ ] **008 - Result persistence** — Save optimization results, best
-  parameters, and validation metrics as structured Parquet files.
-- [ ] **009 - Performance reporting** — Generate summary reports: equity
+- [ ] **011 - Result persistence** — Save optimization results, best
+  parameters, and validation metrics as structured Parquet/JSON files.
+- [ ] **012 - Performance reporting** — Generate summary reports: equity
   curves, parameter distributions, fitness evolution, validation results.
+- [ ] **013 - Pine Script export** — Generate TradingView Pine Script
+  from validated strategy configs.
 
 ## Future (not yet scoped)
 
+- Portfolio simulation (Layer 2, Phase 7)
 - Ensemble strategies
 - Multi-asset optimization
 - Live paper-trading integration
 - Regime detection preprocessing
+- Cross-market validation
