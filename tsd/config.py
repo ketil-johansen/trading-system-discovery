@@ -64,6 +64,10 @@ class Config:
     max_generations: int
     n_trials: int
     download_delay: float
+    quality_gap_threshold_days: int
+    quality_outlier_threshold: float
+    quality_min_coverage: float
+    quality_min_rows: int
     markets: tuple[MarketConfig, ...]
 
 
@@ -112,6 +116,10 @@ def load_config() -> Config:
         max_generations=env_int("TSD_MAX_GENERATIONS", 50),
         n_trials=env_int("TSD_N_TRIALS", 100),
         download_delay=env_float("TSD_DOWNLOAD_DELAY", 1.5),
+        quality_gap_threshold_days=env_int("TSD_QUALITY_GAP_THRESHOLD_DAYS", 5),
+        quality_outlier_threshold=env_float("TSD_QUALITY_OUTLIER_THRESHOLD", 0.50),
+        quality_min_coverage=env_float("TSD_QUALITY_MIN_COVERAGE", 0.80),
+        quality_min_rows=env_int("TSD_QUALITY_MIN_ROWS", 100),
         markets=load_markets(config_dir),
     )
 
