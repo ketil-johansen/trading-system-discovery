@@ -6,7 +6,7 @@ Items near the top are better defined; items further down are rougher.
 
 ## Data Foundation
 
-- [ ] **001 - Market data pipeline** — Fetch OHLCV data via yfinance,
+- [x] **001 - Market data pipeline** — Fetch OHLCV data via yfinance,
   cache as Parquet, handle missing data and splits.
 - [ ] **002 - Data validation and preprocessing** — Validate downloaded
   data integrity, compute derived features via pandas_ta, handle edge
