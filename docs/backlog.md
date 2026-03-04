@@ -18,7 +18,7 @@ Items near the top are better defined; items further down are rougher.
   interface, parameter metadata from `config/indicators.yaml`, and
   16 core indicators across all 6 categories (trend, momentum,
   volatility, volume, regime filters) using the `ta` library.
-- [ ] **004 - Strategy genome and signal generation** — Strategy DNA
+- [x] **004 - Strategy genome and signal generation** — Strategy DNA
   encoding with parameter genes and binary switches, signal generation
   from genome, exit types (all 3 categories), execution timing rules.
 - [ ] **005 - Backtest evaluator and fitness function** — vectorbt-based
