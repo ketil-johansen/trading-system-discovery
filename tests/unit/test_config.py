@@ -141,6 +141,10 @@ class TestGetMarket:
             max_generations=50,
             n_trials=100,
             download_delay=1.5,
+            quality_gap_threshold_days=5,
+            quality_outlier_threshold=0.50,
+            quality_min_coverage=0.80,
+            quality_min_rows=100,
             markets=(
                 MarketConfig(key="abc", name="ABC", index_ticker="^ABC", stock_suffix="", expected_constituents=10),
             ),
@@ -158,6 +162,10 @@ class TestGetMarket:
             max_generations=50,
             n_trials=100,
             download_delay=1.5,
+            quality_gap_threshold_days=5,
+            quality_outlier_threshold=0.50,
+            quality_min_coverage=0.80,
+            quality_min_rows=100,
             markets=(),
         )
         with pytest.raises(ValueError, match="Unknown market key"):
