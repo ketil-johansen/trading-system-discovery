@@ -35,7 +35,7 @@ Items near the top are better defined; items further down are rougher.
   across CPU cores. Checkpointing and resume.
 - [x] **007 - Bayesian optimizer (Optuna)** — Optuna-based parameter
   fine-tuning with TPE sampler, median pruner, study persistence.
-- [ ] **008 - Staged pipeline** — GA → Optuna pipeline with configurable
+- [x] **008 - Staged pipeline** — GA → Optuna pipeline with configurable
   modes (ga_only, bayesian_only, both).
 
 ## Validation (Phase 5)

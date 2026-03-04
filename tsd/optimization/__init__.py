@@ -14,6 +14,12 @@ from tsd.optimization.ga import (
     load_ga_config,
     run_ga,
 )
+from tsd.optimization.pipeline import (
+    PipelineConfig,
+    PipelineResult,
+    load_pipeline_config,
+    run_pipeline,
+)
 
 __all__ = [
     "BayesianConfig",
@@ -22,9 +28,13 @@ __all__ = [
     "GAConfig",
     "GAResult",
     "GenerationStats",
+    "PipelineConfig",
+    "PipelineResult",
     "compute_fitness",
     "load_bayesian_config",
     "load_ga_config",
+    "load_pipeline_config",
     "run_bayesian",
     "run_ga",
+    "run_pipeline",
 ]
