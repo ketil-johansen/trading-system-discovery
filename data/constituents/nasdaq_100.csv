@@ -1,0 +1,102 @@
+ticker,name,yahoo_ticker
+AAPL,Apple Inc.,AAPL
+ABNB,Airbnb Inc.,ABNB
+ADBE,Adobe Inc.,ADBE
+ADI,Analog Devices Inc.,ADI
+ADP,Automatic Data Processing Inc.,ADP
+ADSK,Autodesk Inc.,ADSK
+AEP,American Electric Power Company Inc.,AEP
+ALNY,Alnylam Pharmaceuticals Inc.,ALNY
+AMAT,Applied Materials Inc.,AMAT
+AMD,Advanced Micro Devices Inc.,AMD
+AMGN,Amgen Inc.,AMGN
+AMZN,Amazon.com Inc.,AMZN
+APP,AppLovin Corporation,APP
+ARM,Arm Holdings plc,ARM
+ASML,ASML Holding N.V.,ASML
+AVGO,Broadcom Inc.,AVGO
+AXON,Axon Enterprise Inc.,AXON
+BKNG,Booking Holdings Inc.,BKNG
+BKR,Baker Hughes Company,BKR
+CCEP,Coca-Cola Europacific Partners PLC,CCEP
+CDNS,Cadence Design Systems Inc.,CDNS
+CEG,Constellation Energy Corporation,CEG
+CHTR,Charter Communications Inc.,CHTR
+CMCSA,Comcast Corporation,CMCSA
+COST,Costco Wholesale Corporation,COST
+CPRT,Copart Inc.,CPRT
+CRWD,CrowdStrike Holdings Inc.,CRWD
+CSCO,Cisco Systems Inc.,CSCO
+CSGP,CoStar Group Inc.,CSGP
+CSX,CSX Corporation,CSX
+CTAS,Cintas Corporation,CTAS
+CTSH,Cognizant Technology Solutions Corporation,CTSH
+DASH,DoorDash Inc.,DASH
+DDOG,Datadog Inc.,DDOG
+DXCM,DexCom Inc.,DXCM
+EA,Electronic Arts Inc.,EA
+EXC,Exelon Corporation,EXC
+FANG,Diamondback Energy Inc.,FANG
+FAST,Fastenal Company,FAST
+FER,Ferrovial SE,FER
+FTNT,Fortinet Inc.,FTNT
+GEHC,GE HealthCare Technologies Inc.,GEHC
+GILD,Gilead Sciences Inc.,GILD
+GOOG,Alphabet Inc. (Class C),GOOG
+GOOGL,Alphabet Inc. (Class A),GOOGL
+HON,Honeywell International Inc.,HON
+IDXX,IDEXX Laboratories Inc.,IDXX
+INSM,Insmed Incorporated,INSM
+INTC,Intel Corporation,INTC
+INTU,Intuit Inc.,INTU
+ISRG,Intuitive Surgical Inc.,ISRG
+KDP,Keurig Dr Pepper Inc.,KDP
+KHC,The Kraft Heinz Company,KHC
+KLAC,KLA Corporation,KLAC
+LIN,Linde plc,LIN
+LRCX,Lam Research Corporation,LRCX
+MAR,Marriott International Inc.,MAR
+MCHP,Microchip Technology Incorporated,MCHP
+MDLZ,Mondelez International Inc.,MDLZ
+MELI,MercadoLibre Inc.,MELI
+META,Meta Platforms Inc.,META
+MNST,Monster Beverage Corporation,MNST
+MPWR,Monolithic Power Systems Inc.,MPWR
+MRVL,Marvell Technology Inc.,MRVL
+MSFT,Microsoft Corporation,MSFT
+MSTR,Strategy Inc.,MSTR
+MU,Micron Technology Inc.,MU
+NFLX,Netflix Inc.,NFLX
+NVDA,NVIDIA Corporation,NVDA
+NXPI,NXP Semiconductors N.V.,NXPI
+ODFL,Old Dominion Freight Line Inc.,ODFL
+ORLY,O'Reilly Automotive Inc.,ORLY
+PANW,Palo Alto Networks Inc.,PANW
+PAYX,Paychex Inc.,PAYX
+PCAR,PACCAR Inc,PCAR
+PDD,PDD Holdings Inc.,PDD
+PEP,PepsiCo Inc.,PEP
+PLTR,Palantir Technologies Inc.,PLTR
+PYPL,PayPal Holdings Inc.,PYPL
+QCOM,QUALCOMM Incorporated,QCOM
+REGN,Regeneron Pharmaceuticals Inc.,REGN
+ROP,Roper Technologies Inc.,ROP
+ROST,Ross Stores Inc.,ROST
+SBUX,Starbucks Corporation,SBUX
+SHOP,Shopify Inc.,SHOP
+SNPS,Synopsys Inc.,SNPS
+STX,Seagate Technology Holdings plc,STX
+TEAM,Atlassian Corporation,TEAM
+TMUS,T-Mobile US Inc.,TMUS
+TRI,Thomson Reuters Corporation,TRI
+TSLA,Tesla Inc.,TSLA
+TTWO,Take-Two Interactive Software Inc.,TTWO
+TXN,Texas Instruments Incorporated,TXN
+VRSK,Verisk Analytics Inc.,VRSK
+VRTX,Vertex Pharmaceuticals Incorporated,VRTX
+WBD,Warner Bros. Discovery Inc.,WBD
+WDAY,Workday Inc.,WDAY
+WDC,Western Digital Corporation,WDC
+WMT,Walmart Inc.,WMT
+XEL,Xcel Energy Inc.,XEL
+ZS,Zscaler Inc.,ZS

@@ -49,7 +49,7 @@ venv/
 Thumbs.db
 
 # Data files (market data cache — large, regenerable)
-data/
+data/*
 *.parquet
 *.csv
 *.h5
@@ -71,3 +71,7 @@ logs/
 # Temp
 tmp/
 .temp/
+
+# Exception: constituent lists are committed (small, curated CSVs)
+!data/constituents/
+!data/constituents/**

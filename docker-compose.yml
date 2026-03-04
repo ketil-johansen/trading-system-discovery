@@ -18,6 +18,7 @@ services:
         - TSD_DATA_DIR=/app/data
         - TSD_RESULTS_DIR=/app/results
         - TSD_CONFIG_DIR=/app/config
+        - PYTHONPATH=/app
         - PYTHONDONTWRITEBYTECODE=1
         - PYTHONUNBUFFERED=1
       deploy:
