@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from tsd.analysis.reports import (
     _build_fitness_evolution,
@@ -611,6 +612,9 @@ class TestBuildTradeAnalysis:
         assert analysis.avg_return_winners > 0
         assert analysis.avg_return_losers < 0
         assert analysis.median_holding_days == 5.0
+        assert analysis.yearly_trade_counts == {"2020": 3}
+        assert analysis.yearly_win_rates["2020"] == pytest.approx(2 / 3, abs=0.01)
+        assert analysis.trade_regularity_cv == 0.0  # single year
 
     def test_single_trade(self) -> None:
         """Trade analysis with a single trade."""
@@ -621,6 +625,8 @@ class TestBuildTradeAnalysis:
         assert analysis.best_trade_pct == 0.05
         assert analysis.worst_trade_pct == 0.05
         assert analysis.avg_return_losers == 0.0
+        assert analysis.yearly_trade_counts == {"2020": 1}
+        assert analysis.yearly_win_rates["2020"] == 1.0
 
     def test_empty(self) -> None:
         """Empty trades produce zero analysis."""
@@ -629,6 +635,62 @@ class TestBuildTradeAnalysis:
         assert analysis.cumulative_pnl == ()
         assert analysis.exit_type_counts == {}
         assert analysis.best_trade_pct == 0.0
+        assert analysis.yearly_trade_counts == {}
+        assert analysis.yearly_win_rates == {}
+        assert analysis.trade_regularity_cv == 0.0
+
+    def test_multi_year_regularity(self) -> None:
+        """Trade regularity CV reflects uneven yearly distribution."""
+        t1 = TradeRecord(
+            entry_bar=0,
+            entry_date="2019-03-01",
+            entry_price=100.0,
+            exit_bar=5,
+            exit_date="2019-03-06",
+            exit_price=105.0,
+            exit_type="take_profit",
+            gross_return_pct=0.05,
+            cost_pct=0.002,
+            net_return_pct=0.048,
+            net_profit=480.0,
+            is_win=True,
+            holding_days=5,
+        )
+        t2 = TradeRecord(
+            entry_bar=100,
+            entry_date="2020-06-01",
+            entry_price=100.0,
+            exit_bar=105,
+            exit_date="2020-06-06",
+            exit_price=103.0,
+            exit_type="take_profit",
+            gross_return_pct=0.03,
+            cost_pct=0.002,
+            net_return_pct=0.028,
+            net_profit=280.0,
+            is_win=True,
+            holding_days=5,
+        )
+        t3 = TradeRecord(
+            entry_bar=200,
+            entry_date="2020-09-01",
+            entry_price=100.0,
+            exit_bar=205,
+            exit_date="2020-09-06",
+            exit_price=102.0,
+            exit_type="take_profit",
+            gross_return_pct=0.02,
+            cost_pct=0.002,
+            net_return_pct=0.018,
+            net_profit=180.0,
+            is_win=True,
+            holding_days=5,
+        )
+        analysis = _build_trade_analysis((t1, t2, t3))
+        assert analysis.yearly_trade_counts == {"2019": 1, "2020": 2}
+        assert analysis.yearly_win_rates == {"2019": 1.0, "2020": 1.0}
+        # CV of [1, 2]: mean=1.5, std=0.5, cv=0.333
+        assert analysis.trade_regularity_cv == pytest.approx(0.3333, abs=0.01)
 
 
 # ---------------------------------------------------------------------------
