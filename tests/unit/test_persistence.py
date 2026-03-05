@@ -744,6 +744,7 @@ class TestSaveRun:
         assert manifest.walkforward_path is None
         assert manifest.robustness_path is None
         assert manifest.trades_path is None
+        assert manifest.report_path is None
 
 
 # ---------------------------------------------------------------------------
@@ -821,6 +822,7 @@ class TestFrozen:
             walkforward_path=None,
             robustness_path=None,
             trades_path=None,
+            report_path=None,
             log_path=Path("logs/test.jsonl"),
         )
         with pytest.raises(FrozenInstanceError):
