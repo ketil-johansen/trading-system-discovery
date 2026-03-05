@@ -43,7 +43,7 @@ Items near the top are better defined; items further down are rougher.
 - [x] **009 - Walk-forward validation** — Anchored walk-forward engine
   with growing in-sample, 6-month OOS windows, final holdout. Passing
   criteria evaluation.
-- [ ] **010 - Statistical significance testing** — Monte Carlo
+- [x] **010 - Statistical significance testing** — Monte Carlo
   permutation tests, bootstrap confidence intervals on strategy metrics.
 
 ## Reporting (Phase 6)
