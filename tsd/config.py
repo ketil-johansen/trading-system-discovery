@@ -60,6 +60,9 @@ class Config:
     data_dir: Path
     results_dir: Path
     config_dir: Path
+    market: str
+    indicator_set: str
+    pipeline_mode: str
     population_size: int
     max_generations: int
     n_trials: int
@@ -112,6 +115,9 @@ def load_config() -> Config:
         data_dir=Path(env_str("TSD_DATA_DIR", "data")),
         results_dir=Path(env_str("TSD_RESULTS_DIR", "results")),
         config_dir=config_dir,
+        market=env_str("TSD_MARKET", "omxs30"),
+        indicator_set=env_str("TSD_INDICATOR_SET", "core"),
+        pipeline_mode=env_str("TSD_PIPELINE_MODE", "ga_only"),
         population_size=env_int("TSD_POPULATION_SIZE", 100),
         max_generations=env_int("TSD_MAX_GENERATIONS", 50),
         n_trials=env_int("TSD_N_TRIALS", 100),
@@ -122,6 +128,22 @@ def load_config() -> Config:
         quality_min_rows=env_int("TSD_QUALITY_MIN_ROWS", 100),
         markets=load_markets(config_dir),
     )
+
+
+# Core indicator subset for faster convergence.
+# Covers trend (sma, ema), momentum (rsi, macd), volatility (atr, bollinger),
+# and one filter (price_vs_ma). 7 indicators total.
+CORE_INDICATORS = frozenset(
+    {
+        "sma",
+        "ema",
+        "rsi",
+        "macd",
+        "atr",
+        "bollinger",
+        "price_vs_ma",
+    }
+)
 
 
 def get_market(config: Config, key: str) -> MarketConfig:
