@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from tsd.strategy.genome import (
@@ -76,9 +77,9 @@ def compute_take_profit_level(
 def compute_trailing_stop_levels(
     entry_price: float,
     config: TrailingStopConfig,
-    highs: pd.Series,
-    atr: pd.Series,
-) -> pd.Series:
+    highs: npt.NDArray[np.float64],
+    atr: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
     """Compute trailing stop levels per bar.
 
     The trailing stop ratchets up (never down) and activates only after
@@ -87,19 +88,20 @@ def compute_trailing_stop_levels(
     Args:
         entry_price: Trade entry price.
         config: Trailing stop configuration.
-        highs: High prices per bar.
-        atr: ATR values per bar.
+        highs: High prices per bar (numpy array).
+        atr: ATR values per bar (numpy array).
 
     Returns:
-        Series of trailing stop levels. NaN before activation.
+        Array of trailing stop levels. NaN before activation.
     """
+    n = len(highs)
     activation_level = entry_price * (1.0 + config.activation_percent / 100.0)
-    levels = pd.Series(np.nan, index=highs.index)
+    levels = np.full(n, np.nan)
     activated = False
     max_high = entry_price
 
-    for i in range(len(highs)):
-        current_high = highs.iloc[i]
+    for i in range(n):
+        current_high = highs[i]
         max_high = max(max_high, current_high)
 
         if not activated and max_high >= activation_level:
@@ -107,43 +109,44 @@ def compute_trailing_stop_levels(
 
         if activated:
             if config.mode == "atr":
-                trail = config.atr_multiple * atr.iloc[i]
+                trail = config.atr_multiple * atr[i]
             else:
                 trail = max_high * config.percent / 100.0
             stop = max_high - trail
-            if i > 0 and not np.isnan(levels.iloc[i - 1]):
-                stop = max(stop, levels.iloc[i - 1])
-            levels.iloc[i] = stop
+            if i > 0 and not np.isnan(levels[i - 1]):
+                stop = max(stop, levels[i - 1])
+            levels[i] = stop
 
     return levels
 
 
 def compute_chandelier_levels(
     config: ChandelierConfig,
-    highs: pd.Series,
-    atr: pd.Series,
+    highs: npt.NDArray[np.float64],
+    atr: npt.NDArray[np.float64],
     entry_bar: int,
-) -> pd.Series:
+) -> npt.NDArray[np.float64]:
     """Compute chandelier exit levels per bar.
 
     Chandelier exit = highest high since entry - N × ATR.
 
     Args:
         config: Chandelier exit configuration.
-        highs: High prices per bar.
-        atr: ATR values per bar.
+        highs: High prices per bar (numpy array).
+        atr: ATR values per bar (numpy array).
         entry_bar: iloc index of the entry bar.
 
     Returns:
-        Series of chandelier levels. NaN before entry_bar.
+        Array of chandelier levels. NaN before entry_bar.
     """
-    levels = pd.Series(np.nan, index=highs.index)
-    highest_high = highs.iloc[entry_bar]
+    n = len(highs)
+    levels = np.full(n, np.nan)
+    highest_high = highs[entry_bar]
 
-    for i in range(entry_bar, len(highs)):
-        current_high = highs.iloc[i]
+    for i in range(entry_bar, n):
+        current_high = highs[i]
         highest_high = max(highest_high, current_high)
-        levels.iloc[i] = highest_high - config.atr_multiple * atr.iloc[i]
+        levels[i] = highest_high - config.atr_multiple * atr[i]
 
     return levels
 
@@ -151,9 +154,9 @@ def compute_chandelier_levels(
 def compute_breakeven_level(
     entry_price: float,
     config: BreakevenConfig,
-    highs: pd.Series,
+    highs: npt.NDArray[np.float64],
     atr_at_entry: float,
-) -> pd.Series:
+) -> npt.NDArray[np.float64]:
     """Compute breakeven stop level per bar.
 
     Stop moves to entry price once the trigger profit is reached.
@@ -161,11 +164,11 @@ def compute_breakeven_level(
     Args:
         entry_price: Trade entry price.
         config: Breakeven configuration.
-        highs: High prices per bar.
+        highs: High prices per bar (numpy array).
         atr_at_entry: ATR value at the entry bar.
 
     Returns:
-        Series of breakeven levels. NaN until trigger profit reached,
+        Array of breakeven levels. NaN until trigger profit reached,
         then entry_price.
     """
     if config.mode == "atr":
@@ -173,14 +176,15 @@ def compute_breakeven_level(
     else:
         trigger_level = entry_price * (1.0 + config.trigger_percent / 100.0)
 
-    levels = pd.Series(np.nan, index=highs.index)
+    n = len(highs)
+    levels = np.full(n, np.nan)
     triggered = False
 
-    for i in range(len(highs)):
-        if not triggered and highs.iloc[i] >= trigger_level:
+    for i in range(n):
+        if not triggered and highs[i] >= trigger_level:
             triggered = True
         if triggered:
-            levels.iloc[i] = entry_price
+            levels[i] = entry_price
 
     return levels
 
@@ -254,7 +258,7 @@ def generate_time_exit_signal(
     config: TimeExitGene,
     entry_bar: int,
     df: pd.DataFrame,
-) -> pd.Series:
+) -> npt.NDArray[np.bool_]:
     """Generate time-based exit signals.
 
     Checks max holding days, specific weekday, end-of-week (Friday),
@@ -267,20 +271,21 @@ def generate_time_exit_signal(
         df: OHLCV DataFrame with DatetimeIndex.
 
     Returns:
-        Boolean Series marking bars where time exit triggers.
+        Boolean array marking bars where time exit triggers.
     """
-    signals = pd.Series(False, index=df.index, dtype=bool)
+    n = len(df)
+    signals = np.zeros(n, dtype=np.bool_)
 
     if config.max_days_enabled:
         exit_bar = entry_bar + config.max_days
-        if exit_bar < len(df):
-            signals.iloc[exit_bar] = True
+        if exit_bar < n:
+            signals[exit_bar] = True
 
     if config.weekday_exit_enabled:
-        _apply_weekday_exit(signals, config.weekday, entry_bar)
+        _apply_weekday_exit(signals, df, config.weekday, entry_bar)
 
     if config.eow_enabled:
-        _apply_weekday_exit(signals, 4, entry_bar)  # noqa: PLR2004
+        _apply_weekday_exit(signals, df, 4, entry_bar)  # noqa: PLR2004
 
     if config.eom_enabled:
         _apply_eom_exit(signals, df, entry_bar)
@@ -297,24 +302,25 @@ def generate_time_exit_signal(
     return signals
 
 
-def _apply_weekday_exit(signals: pd.Series, weekday: int, entry_bar: int) -> None:
+def _apply_weekday_exit(signals: npt.NDArray[np.bool_], df: pd.DataFrame, weekday: int, entry_bar: int) -> None:
     """Mark bars matching a specific weekday after entry."""
     for i in range(entry_bar + 1, len(signals)):
-        if hasattr(signals.index[i], "weekday") and signals.index[i].weekday() == weekday:
-            signals.iloc[i] = True
+        if hasattr(df.index[i], "weekday") and df.index[i].weekday() == weekday:
+            signals[i] = True
 
 
-def _apply_eom_exit(signals: pd.Series, df: pd.DataFrame, entry_bar: int) -> None:
+def _apply_eom_exit(signals: npt.NDArray[np.bool_], df: pd.DataFrame, entry_bar: int) -> None:
     """Mark the last trading day of each month after entry."""
-    for i in range(entry_bar + 1, len(df)):
-        if i + 1 >= len(df):
-            signals.iloc[i] = True
+    n = len(df)
+    for i in range(entry_bar + 1, n):
+        if i + 1 >= n:
+            signals[i] = True
         elif df.index[i].month != df.index[i + 1].month:
-            signals.iloc[i] = True
+            signals[i] = True
 
 
 def _apply_stagnation_exit(
-    signals: pd.Series,
+    signals: npt.NDArray[np.bool_],
     df: pd.DataFrame,
     entry_bar: int,
     stagnation_days: int,
@@ -324,10 +330,11 @@ def _apply_stagnation_exit(
     check_bar = entry_bar + stagnation_days
     if check_bar >= len(df):
         return
-    entry_price = df["Close"].iloc[entry_bar]
-    check_price = df["Close"].iloc[check_bar]
+    close_arr = df["Close"].to_numpy()
+    entry_price = close_arr[entry_bar]
+    check_price = close_arr[check_bar]
     pct_move = abs(check_price - entry_price) / entry_price * 100.0
     if pct_move < stagnation_threshold:
         exit_bar = check_bar + 1
         if exit_bar < len(df):
-            signals.iloc[exit_bar] = True
+            signals[exit_bar] = True

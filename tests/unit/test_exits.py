@@ -51,15 +51,15 @@ def ohlcv_df() -> pd.DataFrame:
 
 
 @pytest.fixture
-def highs() -> pd.Series:
+def highs() -> np.ndarray:
     """Monotonically increasing highs for trailing stop tests."""
-    return pd.Series([100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 104.0, 103.0])
+    return np.array([100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 104.0, 103.0])
 
 
 @pytest.fixture
-def flat_atr() -> pd.Series:
+def flat_atr() -> np.ndarray:
     """Constant ATR for predictable tests."""
-    return pd.Series([2.0] * 8)
+    return np.array([2.0] * 8)
 
 
 # ---------------------------------------------------------------------------
@@ -118,7 +118,7 @@ class TestTakeProfit:
 class TestTrailingStop:
     """Tests for compute_trailing_stop_levels."""
 
-    def test_nan_before_activation(self, highs: pd.Series, flat_atr: pd.Series) -> None:
+    def test_nan_before_activation(self, highs: np.ndarray, flat_atr: np.ndarray) -> None:
         cfg = TrailingStopConfig(
             enabled=True,
             mode="percent",
@@ -128,10 +128,10 @@ class TestTrailingStop:
         )
         levels = compute_trailing_stop_levels(100.0, cfg, highs, flat_atr)
         # Activation at 105.0, first hit at index 5
-        assert np.isnan(levels.iloc[0])
-        assert np.isnan(levels.iloc[4])
+        assert np.isnan(levels[0])
+        assert np.isnan(levels[4])
 
-    def test_activates_after_threshold(self, highs: pd.Series, flat_atr: pd.Series) -> None:
+    def test_activates_after_threshold(self, highs: np.ndarray, flat_atr: np.ndarray) -> None:
         cfg = TrailingStopConfig(
             enabled=True,
             mode="percent",
@@ -141,9 +141,9 @@ class TestTrailingStop:
         )
         levels = compute_trailing_stop_levels(100.0, cfg, highs, flat_atr)
         # Activation at 103.0, first activated at index 3
-        assert not np.isnan(levels.iloc[3])
+        assert not np.isnan(levels[3])
 
-    def test_monotonically_non_decreasing(self, highs: pd.Series, flat_atr: pd.Series) -> None:
+    def test_monotonically_non_decreasing(self, highs: np.ndarray, flat_atr: np.ndarray) -> None:
         cfg = TrailingStopConfig(
             enabled=True,
             mode="atr",
@@ -152,12 +152,12 @@ class TestTrailingStop:
             activation_percent=1.0,
         )
         levels = compute_trailing_stop_levels(100.0, cfg, highs, flat_atr)
-        active = levels.dropna()
+        active = levels[~np.isnan(levels)]
         if len(active) > 1:
-            diffs = active.diff().iloc[1:]
+            diffs = np.diff(active)
             assert (diffs >= 0).all(), "Trailing stop must be monotonically non-decreasing"
 
-    def test_atr_mode(self, highs: pd.Series, flat_atr: pd.Series) -> None:
+    def test_atr_mode(self, highs: np.ndarray, flat_atr: np.ndarray) -> None:
         cfg = TrailingStopConfig(
             enabled=True,
             mode="atr",
@@ -167,7 +167,7 @@ class TestTrailingStop:
         )
         levels = compute_trailing_stop_levels(100.0, cfg, highs, flat_atr)
         # After activation, stop = max_high - 1.5 * 2.0 = max_high - 3.0
-        active = levels.dropna()
+        active = levels[~np.isnan(levels)]
         assert len(active) > 0
 
 
@@ -179,28 +179,28 @@ class TestTrailingStop:
 class TestChandelier:
     """Tests for compute_chandelier_levels."""
 
-    def test_nan_before_entry(self, highs: pd.Series, flat_atr: pd.Series) -> None:
+    def test_nan_before_entry(self, highs: np.ndarray, flat_atr: np.ndarray) -> None:
         cfg = ChandelierConfig(enabled=True, atr_multiple=2.0)
         levels = compute_chandelier_levels(cfg, highs, flat_atr, entry_bar=3)
-        assert np.isnan(levels.iloc[0])
-        assert np.isnan(levels.iloc[2])
-        assert not np.isnan(levels.iloc[3])
+        assert np.isnan(levels[0])
+        assert np.isnan(levels[2])
+        assert not np.isnan(levels[3])
 
-    def test_uses_highest_high_since_entry(self, flat_atr: pd.Series) -> None:
-        highs = pd.Series([100.0, 101.0, 105.0, 103.0, 102.0])
-        atr = pd.Series([2.0] * 5)
+    def test_uses_highest_high_since_entry(self, flat_atr: np.ndarray) -> None:
+        highs = np.array([100.0, 101.0, 105.0, 103.0, 102.0])
+        atr = np.array([2.0] * 5)
         cfg = ChandelierConfig(enabled=True, atr_multiple=1.0)
         levels = compute_chandelier_levels(cfg, highs, atr, entry_bar=0)
         # At index 2, highest high is 105, so level = 105 - 1*2 = 103
-        assert levels.iloc[2] == pytest.approx(103.0)
+        assert levels[2] == pytest.approx(103.0)
         # At index 4, highest high still 105, level = 105 - 2 = 103
-        assert levels.iloc[4] == pytest.approx(103.0)
+        assert levels[4] == pytest.approx(103.0)
 
-    def test_values_after_entry(self, highs: pd.Series, flat_atr: pd.Series) -> None:
+    def test_values_after_entry(self, highs: np.ndarray, flat_atr: np.ndarray) -> None:
         cfg = ChandelierConfig(enabled=True, atr_multiple=1.5)
         levels = compute_chandelier_levels(cfg, highs, flat_atr, entry_bar=0)
         # At index 0: highest=100, level=100-3=97
-        assert levels.iloc[0] == pytest.approx(97.0)
+        assert levels[0] == pytest.approx(97.0)
 
 
 # ---------------------------------------------------------------------------
@@ -213,26 +213,26 @@ class TestBreakeven:
 
     def test_nan_before_trigger(self) -> None:
         cfg = BreakevenConfig(enabled=True, mode="percent", trigger_percent=5.0, trigger_atr_multiple=2.0)
-        highs = pd.Series([100.0, 101.0, 102.0, 103.0, 104.0])
+        highs = np.array([100.0, 101.0, 102.0, 103.0, 104.0])
         levels = compute_breakeven_level(100.0, cfg, highs, atr_at_entry=2.0)
         # Trigger at 105.0, never reached
-        assert levels.isna().all()
+        assert np.all(np.isnan(levels))
 
     def test_equals_entry_after_trigger(self) -> None:
         cfg = BreakevenConfig(enabled=True, mode="percent", trigger_percent=3.0, trigger_atr_multiple=2.0)
-        highs = pd.Series([100.0, 101.0, 103.5, 104.0, 102.0])
+        highs = np.array([100.0, 101.0, 103.5, 104.0, 102.0])
         levels = compute_breakeven_level(100.0, cfg, highs, atr_at_entry=2.0)
         # Trigger at 103.0, first triggered at index 2
-        assert levels.iloc[2] == pytest.approx(100.0)
-        assert levels.iloc[3] == pytest.approx(100.0)
-        assert levels.iloc[4] == pytest.approx(100.0)
+        assert levels[2] == pytest.approx(100.0)
+        assert levels[3] == pytest.approx(100.0)
+        assert levels[4] == pytest.approx(100.0)
 
     def test_atr_mode_trigger(self) -> None:
         cfg = BreakevenConfig(enabled=True, mode="atr", trigger_percent=3.0, trigger_atr_multiple=1.5)
-        highs = pd.Series([100.0, 103.0, 104.0, 105.0])
+        highs = np.array([100.0, 103.0, 104.0, 105.0])
         levels = compute_breakeven_level(100.0, cfg, highs, atr_at_entry=2.0)
         # Trigger at 100 + 1.5*2 = 103.0, triggered at index 1
-        assert levels.iloc[1] == pytest.approx(100.0)
+        assert levels[1] == pytest.approx(100.0)
 
 
 # ---------------------------------------------------------------------------
@@ -329,7 +329,7 @@ class TestTimeExits:
             stagnation_threshold=1.0,
         )
         signals = generate_time_exit_signal(cfg, entry_bar=2, df=time_df)
-        assert signals.iloc[7]  # entry_bar(2) + max_days(5) = 7
+        assert signals[7]  # entry_bar(2) + max_days(5) = 7
         assert signals.sum() == 1
 
     def test_weekday_exit(self, time_df: pd.DataFrame) -> None:
@@ -347,7 +347,7 @@ class TestTimeExits:
         )
         signals = generate_time_exit_signal(cfg, entry_bar=0, df=time_df)
         # Fridays in the date range should be flagged
-        friday_signals = [signals.iloc[i] for i in range(1, len(time_df)) if time_df.index[i].weekday() == 4]
+        friday_signals = [signals[i] for i in range(1, len(time_df)) if time_df.index[i].weekday() == 4]
         assert all(friday_signals)
 
     def test_eow_friday(self, time_df: pd.DataFrame) -> None:
@@ -365,7 +365,7 @@ class TestTimeExits:
         signals = generate_time_exit_signal(cfg, entry_bar=0, df=time_df)
         for i in range(1, len(time_df)):
             if time_df.index[i].weekday() == 4:
-                assert signals.iloc[i]
+                assert signals[i]
 
     def test_eom(self) -> None:
         # Create data spanning month boundary
@@ -397,7 +397,7 @@ class TestTimeExits:
         eom_found = False
         for i in range(1, len(df)):
             if i + 1 < len(df) and df.index[i].month != df.index[i + 1].month:
-                assert signals.iloc[i]
+                assert signals[i]
                 eom_found = True
         assert eom_found
 
@@ -417,7 +417,7 @@ class TestTimeExits:
         )
         signals = generate_time_exit_signal(cfg, entry_bar=0, df=time_df)
         # Stagnation check at bar 5, exit at bar 6
-        assert signals.iloc[6]
+        assert signals[6]
 
     def test_stagnation_no_trigger(self) -> None:
         # Price moves significantly

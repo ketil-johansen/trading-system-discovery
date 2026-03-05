@@ -7,10 +7,13 @@ and early stopping.
 
 from __future__ import annotations
 
+import ctypes
 import logging
+import multiprocessing
 import pickle
 import random
 import statistics
+import time
 from dataclasses import dataclass, field
 from multiprocessing.pool import Pool
 from pathlib import Path
@@ -106,12 +109,14 @@ class GAResult:
         best_fitness: Fitness of the best genome.
         generations_run: Number of generations completed.
         logbook: Statistics for each generation.
+        top_genomes: Top N genomes from the hall of fame with fitness values.
     """
 
     best_genome: StrategyGenome
     best_fitness: float
     generations_run: int
     logbook: tuple[GenerationStats, ...]
+    top_genomes: tuple[tuple[StrategyGenome, float], ...] = ()
 
 
 def load_ga_config() -> GAConfig:
@@ -193,16 +198,30 @@ def run_ga(
     )
 
     pool: Pool | None = None
+    counter: Any = None
+    total_val: Any = None
     if ga_config.n_workers > 1:
-        pool = Pool(ga_config.n_workers)  # noqa: SIM115
+        counter = multiprocessing.Value(ctypes.c_int, 0)
+        total_val = multiprocessing.Value(ctypes.c_int, len(population))
+        pool = Pool(  # noqa: SIM115
+            ga_config.n_workers,
+            initializer=_init_worker,
+            initargs=(counter, total_val),
+        )
         toolbox.register("map", pool.map)
+        LOGGER.info("Parallel evaluation: %d workers", ga_config.n_workers)
+    else:
+        LOGGER.info("Sequential evaluation (n_workers=1)")
 
     try:
+        LOGGER.info("Evaluating initial population (%d individuals)...", len(population))
+        init_t0 = time.monotonic()
         _assign_fitness(toolbox, population)
         hof.update(population)
         stats = _compute_generation_stats(0, population)
         logbook.append(stats)
-        _log_generation(stats)
+        init_elapsed = time.monotonic() - init_t0
+        _log_generation(stats, init_elapsed, len(population))
 
         best_fitness, logbook = _evolve_loop(
             toolbox,
@@ -213,6 +232,8 @@ def run_ga(
             stats.best_fitness,
             start_gen,
             logbook,
+            counter,
+            total_val,
         )
     finally:
         if pool is not None:
@@ -223,11 +244,15 @@ def run_ga(
     best_genome = flat_to_genome(list(best_ind), meta)
     generations_run = logbook[-1].generation + 1 if logbook else 0
 
+    top_genomes = tuple((flat_to_genome(list(ind), meta), ind.fitness.values[0]) for ind in hof)
+    LOGGER.info("Hall of fame: %d strategies saved", len(top_genomes))
+
     return GAResult(
         best_genome=best_genome,
         best_fitness=best_ind.fitness.values[0],
         generations_run=generations_run,
         logbook=tuple(logbook),
+        top_genomes=top_genomes,
     )
 
 
@@ -278,6 +303,8 @@ def _evolve_loop(  # noqa: PLR0913
     best_fitness: float,
     start_gen: int,
     logbook: list[GenerationStats],
+    counter: Any = None,
+    total_val: Any = None,
 ) -> tuple[float, list[GenerationStats]]:
     """Run the main generational loop.
 
@@ -290,6 +317,8 @@ def _evolve_loop(  # noqa: PLR0913
         best_fitness: Best fitness seen so far.
         start_gen: Generation to start from.
         logbook: Existing logbook entries.
+        counter: Shared progress counter for parallel evaluation.
+        total_val: Shared total for current evaluation batch.
 
     Returns:
         Tuple of (best_fitness, logbook).
@@ -300,9 +329,13 @@ def _evolve_loop(  # noqa: PLR0913
     stale_count = 0
 
     for gen in range(max(1, start_gen), ga_config.max_generations):
+        gen_t0 = time.monotonic()
         offspring = _breed_generation(toolbox, population, meta, ga_config, pop_size - n_elites)
 
-        _assign_fitness(toolbox, [ind for ind in offspring if not ind.fitness.valid])
+        invalids = [ind for ind in offspring if not ind.fitness.valid]
+        if counter is not None and total_val is not None:
+            _reset_eval_progress(counter, total_val, len(invalids))
+        _assign_fitness(toolbox, invalids)
 
         elites = [toolbox.clone(ind) for ind in hof]
         population[:] = offspring + elites
@@ -310,7 +343,8 @@ def _evolve_loop(  # noqa: PLR0913
 
         stats = _compute_generation_stats(gen, population)
         logbook.append(stats)
-        _log_generation(stats)
+        gen_elapsed = time.monotonic() - gen_t0
+        _log_generation(stats, gen_elapsed, len(invalids))
 
         _save_checkpoint(checkpoint_path, population, gen, hof, logbook, random.getstate())
 
@@ -546,6 +580,47 @@ def _gene_mutation(
 
 
 # ---------------------------------------------------------------------------
+# Shared progress counter for parallel evaluation
+# ---------------------------------------------------------------------------
+
+_eval_counter: Any = None
+_eval_total: Any = None
+
+
+def _init_worker(
+    counter: Any,
+    total: Any,
+) -> None:
+    """Initialize worker process with shared counter.
+
+    Args:
+        counter: Shared integer counter for completed evaluations.
+        total: Shared integer for total evaluations in current batch.
+    """
+    global _eval_counter, _eval_total  # noqa: PLW0603
+    _eval_counter = counter
+    _eval_total = total
+
+
+def _reset_eval_progress(
+    counter: Any,
+    total_val: Any,
+    n: int,
+) -> None:
+    """Reset shared progress counter before a new evaluation batch.
+
+    Args:
+        counter: Shared counter to reset to 0.
+        total_val: Shared total to set to n.
+        n: Number of individuals in this batch.
+    """
+    with counter.get_lock():
+        counter.value = 0
+    with total_val.get_lock():
+        total_val.value = n
+
+
+# ---------------------------------------------------------------------------
 # Evaluation
 # ---------------------------------------------------------------------------
 
@@ -589,6 +664,15 @@ def _evaluate_individual(
 
     aggregated = aggregate_metrics(results)
     fitness = compute_fitness(aggregated, fitness_config)
+
+    if _eval_counter is not None and _eval_total is not None:
+        with _eval_counter.get_lock():
+            _eval_counter.value += 1
+            done = _eval_counter.value
+        total = _eval_total.value
+        if total > 0 and (done % max(1, total // 10) == 0 or done == total):
+            LOGGER.info("  eval %d/%d complete (fitness=%.4f)", done, total, fitness)
+
     return (fitness,)
 
 
@@ -621,19 +705,22 @@ def _compute_generation_stats(generation: int, population: list[Any]) -> Generat
     )
 
 
-def _log_generation(stats: GenerationStats) -> None:
+def _log_generation(stats: GenerationStats, elapsed: float, n_evaluated: int) -> None:
     """Log generation statistics.
 
     Args:
         stats: Generation statistics to log.
+        elapsed: Seconds elapsed for this generation.
+        n_evaluated: Number of individuals evaluated.
     """
     LOGGER.info(
-        "Gen %03d | best=%.4f avg=%.4f std=%.4f diversity=%.2f",
+        "Gen %03d | best=%.4f avg=%.4f std=%.4f | evals=%d %.1fs",
         stats.generation,
         stats.best_fitness,
         stats.avg_fitness,
         stats.std_fitness,
-        stats.diversity,
+        n_evaluated,
+        elapsed,
     )
 
 
