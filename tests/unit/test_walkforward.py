@@ -4,20 +4,18 @@ from __future__ import annotations
 
 import random
 from dataclasses import FrozenInstanceError
+from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
 import pytest
 
-from tsd.optimization.metrics import empty_metrics
 from tsd.optimization.pipeline import PipelineResult
 from tsd.optimization.walkforward import (
     HoldoutResult,
     WalkForwardConfig,
-    WalkForwardResult,
     WalkForwardWindow,
     WindowResult,
-    _evaluate_holdout,
     _evaluate_oos,
     _evaluate_passing_criteria,
     _select_best_genome,
@@ -39,8 +37,6 @@ _CONFIG_DIR = "config"
 @pytest.fixture
 def meta() -> StrategyMeta:
     """Load strategy metadata from config files."""
-    from pathlib import Path
-
     return load_strategy_config(Path(_CONFIG_DIR))
 
 
@@ -334,7 +330,7 @@ class TestSelectBestGenome:
     def test_highest_win_rate(self, genome: StrategyGenome) -> None:
         """Selects genome with highest OOS win rate."""
         genome2 = random_genome(
-            load_strategy_config(pytest.importorskip("pathlib").Path(_CONFIG_DIR)),
+            load_strategy_config(Path(_CONFIG_DIR)),
             rng=random.Random(99),
         )
         wr1 = _make_window_result(genome, oos_wins=40, oos_trades=50)  # 0.80
@@ -345,7 +341,7 @@ class TestSelectBestGenome:
     def test_skips_zero_trade_windows(self, genome: StrategyGenome) -> None:
         """Windows with zero trades are excluded from selection."""
         genome2 = random_genome(
-            load_strategy_config(pytest.importorskip("pathlib").Path(_CONFIG_DIR)),
+            load_strategy_config(Path(_CONFIG_DIR)),
             rng=random.Random(99),
         )
         wr1 = _make_window_result(genome, oos_trades=0, oos_wins=0)
@@ -387,8 +383,7 @@ class TestPassingCriteria:
         """All criteria met returns passed=True."""
         # 10 windows all passing
         windows = tuple(
-            _make_window_result(genome, window_index=i, oos_wins=45, oos_trades=50, oos_profit=100.0)
-            for i in range(10)
+            _make_window_result(genome, window_index=i, oos_wins=45, oos_trades=50, oos_profit=100.0) for i in range(10)
         )
         holdout = self._make_holdout(genome)
         cfg = WalkForwardConfig(min_oos_windows_win_rate=8, min_oos_windows_profitable=7)
@@ -402,8 +397,7 @@ class TestPassingCriteria:
         """Insufficient windows passing win rate fails."""
         # Only 3 windows passing win rate (0.80)
         passing = [
-            _make_window_result(genome, window_index=i, oos_wins=45, oos_trades=50, oos_profit=100.0)
-            for i in range(3)
+            _make_window_result(genome, window_index=i, oos_wins=45, oos_trades=50, oos_profit=100.0) for i in range(3)
         ]
         failing = [
             _make_window_result(genome, window_index=i + 3, oos_wins=30, oos_trades=50, oos_profit=100.0)
@@ -420,8 +414,7 @@ class TestPassingCriteria:
         """Insufficient profitable windows fails."""
         # All pass win rate but only 2 profitable
         profitable = [
-            _make_window_result(genome, window_index=i, oos_wins=45, oos_trades=50, oos_profit=100.0)
-            for i in range(2)
+            _make_window_result(genome, window_index=i, oos_wins=45, oos_trades=50, oos_profit=100.0) for i in range(2)
         ]
         unprofitable = [
             _make_window_result(genome, window_index=i + 2, oos_wins=45, oos_trades=50, oos_profit=-50.0)
@@ -437,8 +430,7 @@ class TestPassingCriteria:
     def test_holdout_fail(self, genome: StrategyGenome) -> None:
         """Holdout not profitable fails."""
         windows = tuple(
-            _make_window_result(genome, window_index=i, oos_wins=45, oos_trades=50, oos_profit=100.0)
-            for i in range(10)
+            _make_window_result(genome, window_index=i, oos_wins=45, oos_trades=50, oos_profit=100.0) for i in range(10)
         )
         holdout = self._make_holdout(genome, profitable=False)
         cfg = WalkForwardConfig(min_oos_windows_win_rate=8, min_oos_windows_profitable=7)
@@ -449,8 +441,7 @@ class TestPassingCriteria:
     def test_low_frequency_flag(self, genome: StrategyGenome) -> None:
         """Windows with few trades flag low_frequency."""
         normal = [
-            _make_window_result(genome, window_index=i, oos_wins=45, oos_trades=50, oos_profit=100.0)
-            for i in range(9)
+            _make_window_result(genome, window_index=i, oos_wins=45, oos_trades=50, oos_profit=100.0) for i in range(9)
         ]
         low = [_make_window_result(genome, window_index=9, oos_wins=3, oos_trades=4, oos_profit=10.0)]
         windows = tuple(normal + low)

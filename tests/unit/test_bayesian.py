@@ -18,8 +18,8 @@ from tsd.optimization.bayesian import (
     load_bayesian_config,
     run_bayesian,
 )
-from tsd.optimization.metrics import aggregate_metrics
 from tsd.optimization.fitness import FitnessConfig
+from tsd.optimization.metrics import aggregate_metrics
 from tsd.strategy.evaluator import BacktestMetrics, BacktestResult, EvaluatorConfig
 from tsd.strategy.genome import (
     StrategyGenome,

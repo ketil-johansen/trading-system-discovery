@@ -278,37 +278,54 @@ def run_walkforward(  # noqa: PLR0913
     for window in windows:
         LOGGER.info(
             "Running window %d: IS [%s, %s) OOS [%s, %s)",
-            window.window_index, window.is_start.date(), window.is_end.date(),
-            window.oos_start.date(), window.oos_end.date(),
+            window.window_index,
+            window.is_start.date(),
+            window.is_end.date(),
+            window.oos_start.date(),
+            window.oos_end.date(),
         )
         result = _run_window(
-            window, meta, stocks_data, indicator_outputs,
-            pipeline_config, eval_config, fitness_config,
+            window,
+            meta,
+            stocks_data,
+            indicator_outputs,
+            pipeline_config,
+            eval_config,
+            fitness_config,
         )
         window_results.append(result)
         LOGGER.info(
             "Window %d: IS fitness=%.4f, OOS trades=%d, OOS win_rate=%.4f",
-            window.window_index, result.is_fitness,
-            result.oos_metrics.num_trades, result.oos_metrics.win_rate,
+            window.window_index,
+            result.is_fitness,
+            result.oos_metrics.num_trades,
+            result.oos_metrics.win_rate,
         )
 
     best_genome = _select_best_genome(window_results)
 
     traded_windows = [wr for wr in window_results if wr.oos_metrics.num_trades > 0]
     avg_oos_win_rate = (
-        sum(wr.oos_metrics.win_rate for wr in traded_windows) / len(traded_windows)
-        if traded_windows
-        else 0.0
+        sum(wr.oos_metrics.win_rate for wr in traded_windows) / len(traded_windows) if traded_windows else 0.0
     )
 
     holdout_result = _evaluate_holdout(
-        best_genome, stocks_data, indicator_outputs, eval_config,
-        holdout_start, holdout_end, avg_oos_win_rate, wf_config,
+        best_genome,
+        stocks_data,
+        indicator_outputs,
+        eval_config,
+        holdout_start,
+        holdout_end,
+        avg_oos_win_rate,
+        wf_config,
     )
 
     return _evaluate_passing_criteria(
-        tuple(window_results), holdout_result, best_genome,
-        avg_oos_win_rate, wf_config,
+        tuple(window_results),
+        holdout_result,
+        best_genome,
+        avg_oos_win_rate,
+        wf_config,
     )
 
 
@@ -410,7 +427,10 @@ def _run_window(  # noqa: PLR0913
     )
 
     oos_metrics = _evaluate_oos(
-        pipeline_result.best_genome, oos_data, indicator_outputs, eval_config,
+        pipeline_result.best_genome,
+        oos_data,
+        indicator_outputs,
+        eval_config,
     )
 
     return WindowResult(
@@ -499,14 +519,15 @@ def _evaluate_holdout(  # noqa: PLR0913
     metrics = _evaluate_oos(genome, holdout_data, indicator_outputs, eval_config)
 
     is_profitable = metrics.net_profit > 0
-    win_rate_within_tolerance = (
-        metrics.win_rate >= avg_oos_win_rate - wf_config.holdout_win_rate_tolerance
-    )
+    win_rate_within_tolerance = metrics.win_rate >= avg_oos_win_rate - wf_config.holdout_win_rate_tolerance
 
     LOGGER.info(
         "Holdout: trades=%d, win_rate=%.4f, net_profit=%.2f, profitable=%s, tolerance=%s",
-        metrics.num_trades, metrics.win_rate, metrics.net_profit,
-        is_profitable, win_rate_within_tolerance,
+        metrics.num_trades,
+        metrics.win_rate,
+        metrics.net_profit,
+        is_profitable,
+        win_rate_within_tolerance,
     )
 
     return HoldoutResult(
@@ -546,19 +567,10 @@ def _evaluate_passing_criteria(
     traded = [wr for wr in window_results if wr.oos_metrics.num_trades > 0]
     windows_with_trades = len(traded)
 
-    windows_passing_win_rate = sum(
-        1 for wr in traded
-        if wr.oos_metrics.win_rate >= wf_config.min_win_rate_threshold
-    )
-    windows_profitable = sum(
-        1 for wr in traded
-        if wr.oos_metrics.net_profit > 0
-    )
+    windows_passing_win_rate = sum(1 for wr in traded if wr.oos_metrics.win_rate >= wf_config.min_win_rate_threshold)
+    windows_profitable = sum(1 for wr in traded if wr.oos_metrics.net_profit > 0)
 
-    low_frequency = any(
-        0 < wr.oos_metrics.num_trades < wf_config.low_frequency_threshold
-        for wr in window_results
-    )
+    low_frequency = any(0 < wr.oos_metrics.num_trades < wf_config.low_frequency_threshold for wr in window_results)
 
     win_rate_pass = windows_passing_win_rate >= wf_config.min_oos_windows_win_rate
     profitability_pass = windows_profitable >= wf_config.min_oos_windows_profitable
@@ -567,7 +579,11 @@ def _evaluate_passing_criteria(
 
     LOGGER.info(
         "Walk-forward result: passed=%s (win_rate=%s, profit=%s, holdout=%s, low_freq=%s)",
-        passed, win_rate_pass, profitability_pass, holdout_pass, low_frequency,
+        passed,
+        win_rate_pass,
+        profitability_pass,
+        holdout_pass,
+        low_frequency,
     )
 
     return WalkForwardResult(
