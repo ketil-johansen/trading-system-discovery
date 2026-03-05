@@ -459,6 +459,17 @@ def save_run(  # noqa: PLR0913
         _save_genome(genome, strategy_path)
         LOGGER.info("Saved genome to %s", strategy_path)
 
+    # Save top N genomes from the hall of fame
+    top_genomes: tuple[tuple[StrategyGenome, float], ...] = ()
+    if pipeline_result and pipeline_result.top_genomes:
+        top_genomes = pipeline_result.top_genomes
+    if top_genomes:
+        strategies_dir = results_dir / "strategies"
+        for rank, (g, fitness) in enumerate(top_genomes):
+            path = strategies_dir / f"{run_id}_top{rank:02d}_f{fitness:.4f}.json"
+            _save_genome(g, path)
+        LOGGER.info("Saved %d top strategies to %s", len(top_genomes), strategies_dir)
+
     if pipeline_result:
         pipeline_path = results_dir / "performance" / f"{run_id}_pipeline.json"
         _save_pipeline_result(pipeline_result, pipeline_path)

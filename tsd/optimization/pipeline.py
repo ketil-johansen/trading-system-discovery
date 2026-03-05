@@ -47,6 +47,7 @@ class PipelineResult:
         best_fitness: Final best fitness value.
         ga_result: GA stage result, None if bayesian_only mode.
         bayesian_result: Bayesian stage result, None if ga_only mode.
+        top_genomes: Top N genomes with fitness values from the GA hall of fame.
     """
 
     mode: str
@@ -54,6 +55,7 @@ class PipelineResult:
     best_fitness: float
     ga_result: GAResult | None
     bayesian_result: BayesianResult | None
+    top_genomes: tuple[tuple[StrategyGenome, float], ...] = ()
 
 
 def load_pipeline_config() -> PipelineConfig:
@@ -153,6 +155,7 @@ def _run_ga_only(
         best_fitness=ga_result.best_fitness,
         ga_result=ga_result,
         bayesian_result=None,
+        top_genomes=ga_result.top_genomes,
     )
 
 
@@ -211,6 +214,7 @@ def _run_both(  # noqa: PLR0913
         best_fitness=bayesian_result.best_fitness,
         ga_result=ga_result,
         bayesian_result=bayesian_result,
+        top_genomes=ga_result.top_genomes,
     )
 
 
