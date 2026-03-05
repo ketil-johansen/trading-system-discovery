@@ -52,7 +52,13 @@ Items near the top are better defined; items further down are rougher.
   parameters, and validation metrics as structured Parquet/JSON files.
 - [x] **012 - Performance reporting** — Generate summary reports: equity
   curves, parameter distributions, fitness evolution, validation results.
-- [ ] **013 - Pine Script export** — Generate TradingView Pine Script
+- [x] **013 - Pipeline runner** — Wire up full end-to-end pipeline with
+  market data loading, indicator set filtering, progress logging, and
+  Docker environment configuration.
+
+## Export (Phase 7)
+
+- [ ] **014 - Pine Script export** — Generate TradingView Pine Script
   from validated strategy configs.
 
 ## Future (not yet scoped)

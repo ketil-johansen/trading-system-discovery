@@ -13,6 +13,9 @@ services:
         - ./pyproject.toml:/app/pyproject.toml:ro
       environment:
         - TSD_LOG_LEVEL=${TSD_LOG_LEVEL:-INFO}
+        - TSD_MARKET=${TSD_MARKET:-omxs30}
+        - TSD_INDICATOR_SET=${TSD_INDICATOR_SET:-core}
+        - TSD_PIPELINE_MODE=${TSD_PIPELINE_MODE:-ga_only}
         - TSD_POPULATION_SIZE=${TSD_POPULATION_SIZE:-100}
         - TSD_MAX_GENERATIONS=${TSD_MAX_GENERATIONS:-50}
         - TSD_N_TRIALS=${TSD_N_TRIALS:-100}
