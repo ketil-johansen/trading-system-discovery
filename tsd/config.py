@@ -63,9 +63,6 @@ class Config:
     market: str
     indicator_set: str
     pipeline_mode: str
-    population_size: int
-    max_generations: int
-    n_trials: int
     download_delay: float
     quality_gap_threshold_days: int
     quality_outlier_threshold: float
@@ -118,9 +115,6 @@ def load_config() -> Config:
         market=env_str("TSD_MARKET", "omxs30"),
         indicator_set=env_str("TSD_INDICATOR_SET", "core"),
         pipeline_mode=env_str("TSD_PIPELINE_MODE", "ga_only"),
-        population_size=env_int("TSD_POPULATION_SIZE", 100),
-        max_generations=env_int("TSD_MAX_GENERATIONS", 50),
-        n_trials=env_int("TSD_N_TRIALS", 100),
         download_delay=env_float("TSD_DOWNLOAD_DELAY", 1.5),
         quality_gap_threshold_days=env_int("TSD_QUALITY_GAP_THRESHOLD_DAYS", 5),
         quality_outlier_threshold=env_float("TSD_QUALITY_OUTLIER_THRESHOLD", 0.50),

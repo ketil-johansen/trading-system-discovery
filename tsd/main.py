@@ -20,7 +20,7 @@ from tsd.config import CORE_INDICATORS, Config, load_config
 from tsd.data.loader import load_market_data
 from tsd.export.persistence import generate_run_id, save_run
 from tsd.optimization.fitness import FitnessConfig
-from tsd.optimization.ga import GAConfig
+from tsd.optimization.ga import GAConfig, load_ga_config
 from tsd.optimization.pipeline import PipelineConfig, run_pipeline
 from tsd.strategy.evaluator import (
     BacktestMetrics,
@@ -108,25 +108,31 @@ def main() -> int:
     LOGGER.info("=" * 60)
     LOGGER.info("Trading System Discovery — run %s", run_id)
     LOGGER.info("=" * 60)
+    ga_config = load_ga_config()
     LOGGER.info("Market: %s", config.market)
     LOGGER.info("Indicator set: %s", config.indicator_set)
     LOGGER.info("Pipeline mode: %s", config.pipeline_mode)
-    LOGGER.info("GA: pop=%d, gens=%d", config.population_size, config.max_generations)
-    LOGGER.info("Bayesian: trials=%d", config.n_trials)
+    LOGGER.info(
+        "GA: pop=%d, gens=%d, workers=%d",
+        ga_config.population_size,
+        ga_config.max_generations,
+        ga_config.n_workers,
+    )
 
     try:
-        return _run_pipeline(config, run_id)
+        return _run_pipeline(config, run_id, ga_config)
     except Exception:
         LOGGER.exception("Pipeline failed")
         return 1
 
 
-def _run_pipeline(config: Config, run_id: str) -> int:
+def _run_pipeline(config: Config, run_id: str, ga_config: GAConfig) -> int:
     """Execute the full pipeline.
 
     Args:
         config: Application configuration.
         run_id: Unique run identifier.
+        ga_config: GA configuration.
 
     Returns:
         Exit code (0 for success).
@@ -162,10 +168,7 @@ def _run_pipeline(config: Config, run_id: str) -> int:
         stocks_data=stocks_data,
         indicator_outputs=meta.indicator_outputs,
         pipeline_config=PipelineConfig(mode=config.pipeline_mode),
-        ga_config=GAConfig(
-            population_size=config.population_size,
-            max_generations=config.max_generations,
-        ),
+        ga_config=ga_config,
         eval_config=EvaluatorConfig(),
         fitness_config=FitnessConfig(),
     )
