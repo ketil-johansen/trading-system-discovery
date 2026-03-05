@@ -127,6 +127,9 @@ class TradeAnalysis:
     best_trade_pct: float
     worst_trade_pct: float
     median_holding_days: float
+    yearly_trade_counts: dict[str, int]
+    yearly_win_rates: dict[str, float]
+    trade_regularity_cv: float
 
 
 @dataclass(frozen=True)
@@ -474,6 +477,9 @@ def _build_trade_analysis(trades: tuple[TradeRecord, ...]) -> TradeAnalysis:
             best_trade_pct=0.0,
             worst_trade_pct=0.0,
             median_holding_days=0.0,
+            yearly_trade_counts={},
+            yearly_win_rates={},
+            trade_regularity_cv=0.0,
         )
 
     # Cumulative P&L
@@ -513,6 +519,25 @@ def _build_trade_analysis(trades: tuple[TradeRecord, ...]) -> TradeAnalysis:
     else:
         median_hd = (holding_days[n // 2 - 1] + holding_days[n // 2]) / 2.0
 
+    # Yearly trade counts and win rates
+    yearly_counts: dict[str, int] = {}
+    yearly_wins: dict[str, int] = {}
+    for t in trades:
+        year = t.entry_date[:4]
+        yearly_counts[year] = yearly_counts.get(year, 0) + 1
+        if t.is_win:
+            yearly_wins[year] = yearly_wins.get(year, 0) + 1
+    yearly_win_rates = {y: yearly_wins.get(y, 0) / c for y, c in yearly_counts.items()}
+
+    # Trade regularity: coefficient of variation of yearly trade counts
+    counts = list(yearly_counts.values())
+    if len(counts) >= 2:  # noqa: PLR2004
+        mean_c = sum(counts) / len(counts)
+        std_c = (sum((c - mean_c) ** 2 for c in counts) / len(counts)) ** 0.5
+        regularity_cv = round(std_c / mean_c, 4) if mean_c > 0 else 0.0
+    else:
+        regularity_cv = 0.0
+
     return TradeAnalysis(
         total_trades=len(trades),
         cumulative_pnl=tuple(cumulative),
@@ -523,6 +548,9 @@ def _build_trade_analysis(trades: tuple[TradeRecord, ...]) -> TradeAnalysis:
         best_trade_pct=best,
         worst_trade_pct=worst,
         median_holding_days=median_hd,
+        yearly_trade_counts=yearly_counts,
+        yearly_win_rates={y: round(r, 4) for y, r in yearly_win_rates.items()},
+        trade_regularity_cv=regularity_cv,
     )
 
 
