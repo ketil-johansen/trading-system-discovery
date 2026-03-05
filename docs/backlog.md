@@ -50,7 +50,7 @@ Items near the top are better defined; items further down are rougher.
 
 - [x] **011 - Result persistence** — Save optimization results, best
   parameters, and validation metrics as structured Parquet/JSON files.
-- [ ] **012 - Performance reporting** — Generate summary reports: equity
+- [x] **012 - Performance reporting** — Generate summary reports: equity
   curves, parameter distributions, fitness evolution, validation results.
 - [ ] **013 - Pine Script export** — Generate TradingView Pine Script
   from validated strategy configs.
