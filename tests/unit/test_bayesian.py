@@ -13,12 +13,12 @@ import pytest
 from tsd.optimization.bayesian import (
     BayesianConfig,
     BayesianResult,
-    _aggregate_metrics,
     _make_objective,
     _suggest_genome,
     load_bayesian_config,
     run_bayesian,
 )
+from tsd.optimization.metrics import aggregate_metrics
 from tsd.optimization.fitness import FitnessConfig
 from tsd.strategy.evaluator import BacktestMetrics, BacktestResult, EvaluatorConfig
 from tsd.strategy.genome import (
@@ -217,12 +217,12 @@ class TestSuggestGenome:
 
 @pytest.mark.unit
 class TestAggregateMetrics:
-    """Tests for _aggregate_metrics."""
+    """Tests for aggregate_metrics."""
 
     def test_single_stock(self) -> None:
         """Single stock result passes through."""
         result = _make_backtest_result(num_trades=40, num_wins=35, net_profit=300.0)
-        agg = _aggregate_metrics([result])
+        agg = aggregate_metrics([result])
         assert agg.num_trades == 40
         assert agg.num_wins == 35
         assert agg.num_losses == 5
@@ -233,7 +233,7 @@ class TestAggregateMetrics:
         """Multiple stocks aggregate correctly."""
         r1 = _make_backtest_result(num_trades=30, num_wins=25, net_profit=200.0)
         r2 = _make_backtest_result(num_trades=20, num_wins=18, net_profit=150.0)
-        agg = _aggregate_metrics([r1, r2])
+        agg = aggregate_metrics([r1, r2])
         assert agg.num_trades == 50
         assert agg.num_wins == 43
         assert agg.num_losses == 7

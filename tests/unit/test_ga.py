@@ -15,7 +15,6 @@ from tsd.optimization.ga import (
     GAConfig,
     GAResult,
     GenerationStats,
-    _aggregate_metrics,
     _compute_segment_boundaries,
     _evaluate_individual,
     _gene_mutation,
@@ -25,6 +24,7 @@ from tsd.optimization.ga import (
     load_ga_config,
     run_ga,
 )
+from tsd.optimization.metrics import aggregate_metrics
 from tsd.strategy.evaluator import BacktestMetrics, BacktestResult, EvaluatorConfig
 from tsd.strategy.genome import (
     StrategyMeta,
@@ -261,7 +261,7 @@ class TestAggregateMetrics:
     def test_single_stock(self) -> None:
         """Single stock passthrough."""
         result = _make_backtest_result(num_trades=40, num_wins=32, net_profit=200.0)
-        agg = _aggregate_metrics([result])
+        agg = aggregate_metrics([result])
         assert agg.num_trades == 40
         assert agg.num_wins == 32
         assert agg.num_losses == 8
@@ -272,7 +272,7 @@ class TestAggregateMetrics:
         """Sums trades and recomputes win_rate."""
         r1 = _make_backtest_result(num_trades=20, num_wins=16, net_profit=100.0)
         r2 = _make_backtest_result(num_trades=30, num_wins=24, net_profit=200.0)
-        agg = _aggregate_metrics([r1, r2])
+        agg = aggregate_metrics([r1, r2])
         assert agg.num_trades == 50
         assert agg.num_wins == 40
         assert agg.num_losses == 10
