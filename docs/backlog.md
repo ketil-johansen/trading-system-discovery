@@ -48,7 +48,7 @@ Items near the top are better defined; items further down are rougher.
 
 ## Reporting (Phase 6)
 
-- [ ] **011 - Result persistence** — Save optimization results, best
+- [x] **011 - Result persistence** — Save optimization results, best
   parameters, and validation metrics as structured Parquet/JSON files.
 - [ ] **012 - Performance reporting** — Generate summary reports: equity
   curves, parameter distributions, fitness evolution, validation results.
