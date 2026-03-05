@@ -12,6 +12,7 @@ import math
 from dataclasses import dataclass
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from tsd.indicators.base import compute_indicator
@@ -44,11 +45,13 @@ class EvaluatorConfig:
         notional_per_trade: Dollar amount per trade for P&L calculation.
         round_trip_cost_pct: Round-trip transaction cost as percentage.
         atr_period: ATR period for exit level calculations.
+        max_trades_per_stock: Maximum trades per stock before early exit.
     """
 
     notional_per_trade: float = 10_000.0
     round_trip_cost_pct: float = 0.20
     atr_period: int = 14
+    max_trades_per_stock: int = 200
 
 
 @dataclass(frozen=True)
@@ -158,20 +161,28 @@ class _SimContext:
     """Bundles precomputed data for the simulation loop.
 
     Attributes:
-        df: OHLCV DataFrame.
-        shifted_entries: Entry signals shifted to next open.
-        shifted_indicator_exits: Indicator exit signals shifted to next open.
-        raw_entry_signals: Unshifted entry signals for opposite_entry logic.
-        atr_series: ATR values per bar.
+        df: OHLCV DataFrame (retained for date access in trade records).
+        open_arr: Open prices as numpy array.
+        high_arr: High prices as numpy array.
+        low_arr: Low prices as numpy array.
+        close_arr: Close prices as numpy array.
+        entry_arr: Entry signals (shifted) as boolean numpy array.
+        ind_exit_arr: Indicator exit signals (shifted) as boolean numpy array.
+        raw_entry_arr: Unshifted entry signals as boolean numpy array.
+        atr_arr: ATR values as numpy array.
         indicator_outputs: Output metadata for indicator comparisons.
         config: Evaluator configuration.
     """
 
     df: pd.DataFrame
-    shifted_entries: pd.Series
-    shifted_indicator_exits: pd.Series
-    raw_entry_signals: pd.Series
-    atr_series: pd.Series
+    open_arr: npt.NDArray[np.float64]
+    high_arr: npt.NDArray[np.float64]
+    low_arr: npt.NDArray[np.float64]
+    close_arr: npt.NDArray[np.float64]
+    entry_arr: npt.NDArray[np.bool_]
+    ind_exit_arr: npt.NDArray[np.bool_]
+    raw_entry_arr: npt.NDArray[np.bool_]
+    atr_arr: npt.NDArray[np.float64]
     indicator_outputs: dict[str, tuple[OutputMeta, ...]]
     config: EvaluatorConfig
 
@@ -216,10 +227,14 @@ def run_backtest(
 
     ctx = _SimContext(
         df=df,
-        shifted_entries=shifted_entries,
-        shifted_indicator_exits=shifted_indicator_exits,
-        raw_entry_signals=raw_entry_signals,
-        atr_series=atr_series,
+        open_arr=df["Open"].to_numpy(dtype=np.float64),
+        high_arr=df["High"].to_numpy(dtype=np.float64),
+        low_arr=df["Low"].to_numpy(dtype=np.float64),
+        close_arr=df["Close"].to_numpy(dtype=np.float64),
+        entry_arr=shifted_entries.to_numpy(dtype=np.bool_),
+        ind_exit_arr=shifted_indicator_exits.to_numpy(dtype=np.bool_),
+        raw_entry_arr=raw_entry_signals.to_numpy(dtype=np.bool_),
+        atr_arr=atr_series.to_numpy(dtype=np.float64),
         indicator_outputs=indicator_outputs,
         config=config,
     )
@@ -249,6 +264,7 @@ def _simulate_trades(
     """
     df = ctx.df
     n_bars = len(df)
+    max_trades = ctx.config.max_trades_per_stock
     trades: list[TradeRecord] = []
 
     in_position = False
@@ -257,19 +273,19 @@ def _simulate_trades(
     # Per-trade exit data (set when opening a position)
     fixed_stop: float | None = None
     fixed_target: float | None = None
-    trailing_levels: pd.Series | None = None
-    chandelier_levels: pd.Series | None = None
-    breakeven_levels: pd.Series | None = None
-    time_exit_signals: pd.Series | None = None
+    trailing_levels: npt.NDArray[np.float64] | None = None
+    chandelier_levels: npt.NDArray[np.float64] | None = None
+    breakeven_levels: npt.NDArray[np.float64] | None = None
+    time_exit_signals: npt.NDArray[np.bool_] | None = None
 
     for bar in range(n_bars):
         if not in_position:
-            if ctx.shifted_entries.iloc[bar] and not np.isnan(ctx.atr_series.iloc[bar]):
+            if ctx.entry_arr[bar] and not np.isnan(ctx.atr_arr[bar]):
                 # Open position at this bar's Open
                 in_position = True
                 entry_bar = bar
-                entry_price = float(df["Open"].iloc[bar])
-                atr_at_entry = float(ctx.atr_series.iloc[bar])
+                entry_price = ctx.open_arr[bar]
+                atr_at_entry = ctx.atr_arr[bar]
 
                 # Compute exit levels for this trade
                 limits = genome.limit_exits
@@ -287,21 +303,21 @@ def _simulate_trades(
                     trailing_levels = compute_trailing_stop_levels(
                         entry_price,
                         limits.trailing_stop,
-                        df["High"].iloc[bar:],
-                        ctx.atr_series.iloc[bar:],
+                        ctx.high_arr[bar:],
+                        ctx.atr_arr[bar:],
                     )
                 if limits.chandelier.enabled:
                     chandelier_levels = compute_chandelier_levels(
                         limits.chandelier,
-                        df["High"].iloc[bar:],
-                        ctx.atr_series.iloc[bar:],
-                        0,  # entry_bar=0 relative to slice
+                        ctx.high_arr[bar:],
+                        ctx.atr_arr[bar:],
+                        0,
                     )
                 if limits.breakeven.enabled:
                     breakeven_levels = compute_breakeven_level(
                         entry_price,
                         limits.breakeven,
-                        df["High"].iloc[bar:],
+                        ctx.high_arr[bar:],
                         atr_at_entry,
                     )
 
@@ -312,7 +328,6 @@ def _simulate_trades(
                 bar=bar,
                 entry_bar=entry_bar,
                 entry_price=entry_price,
-                df=df,
                 ctx=ctx,
                 fixed_stop=fixed_stop,
                 fixed_target=fixed_target,
@@ -327,10 +342,12 @@ def _simulate_trades(
                 trade = _build_trade_record(entry_bar, entry_price, bar, exit_price, exit_type, df, ctx.config)
                 trades.append(trade)
                 in_position = False
+                if len(trades) >= max_trades:
+                    break
 
     # Close position at end of data if still open
-    if in_position:
-        exit_price = float(df["Close"].iloc[-1])
+    if in_position and len(trades) < max_trades:
+        exit_price = ctx.close_arr[-1]
         trade = _build_trade_record(
             entry_bar,
             entry_price,
@@ -349,14 +366,13 @@ def _check_all_exits(  # noqa: PLR0913
     bar: int,
     entry_bar: int,
     entry_price: float,
-    df: pd.DataFrame,
     ctx: _SimContext,
     fixed_stop: float | None,
     fixed_target: float | None,
-    trailing_levels: pd.Series | None,
-    chandelier_levels: pd.Series | None,
-    breakeven_levels: pd.Series | None,
-    time_exit_signals: pd.Series | None,
+    trailing_levels: npt.NDArray[np.float64] | None,
+    chandelier_levels: npt.NDArray[np.float64] | None,
+    breakeven_levels: npt.NDArray[np.float64] | None,
+    time_exit_signals: npt.NDArray[np.bool_] | None,
     genome: StrategyGenome,
 ) -> tuple[str, float] | None:
     """Check all exit types in priority order for the current bar.
@@ -365,30 +381,29 @@ def _check_all_exits(  # noqa: PLR0913
         bar: Current bar iloc index.
         entry_bar: Entry bar iloc index.
         entry_price: Entry price.
-        df: OHLCV DataFrame.
         ctx: Simulation context.
         fixed_stop: Fixed stop-loss level or None.
         fixed_target: Fixed take-profit level or None.
-        trailing_levels: Trailing stop levels Series or None.
-        chandelier_levels: Chandelier levels Series or None.
-        breakeven_levels: Breakeven levels Series or None.
-        time_exit_signals: Time exit signals Series or None.
+        trailing_levels: Trailing stop levels array or None.
+        chandelier_levels: Chandelier levels array or None.
+        breakeven_levels: Breakeven levels array or None.
+        time_exit_signals: Time exit signals array or None.
         genome: Strategy genome.
 
     Returns:
         Tuple of (exit_type, exit_price) or None if no exit triggered.
     """
-    open_price = float(df["Open"].iloc[bar])
+    open_price = ctx.open_arr[bar]
 
     # Priority 1: Time exits at open
-    if time_exit_signals is not None and time_exit_signals.iloc[bar]:
-        return ("time", open_price)
+    if time_exit_signals is not None and time_exit_signals[bar]:
+        return ("time", float(open_price))
 
     # Priority 2: Limit exits intraday
     limit_result = _check_limit_exits(
         bar=bar,
         entry_bar=entry_bar,
-        df=df,
+        ctx=ctx,
         fixed_stop=fixed_stop,
         fixed_target=fixed_target,
         trailing_levels=trailing_levels,
@@ -401,7 +416,7 @@ def _check_all_exits(  # noqa: PLR0913
     # Priority 3: Indicator exits at open (shifted)
     indicator_exit = _check_indicator_exits(bar, ctx, genome)
     if indicator_exit:
-        return ("indicator", open_price)
+        return ("indicator", float(open_price))
 
     return None
 
@@ -409,12 +424,12 @@ def _check_all_exits(  # noqa: PLR0913
 def _check_limit_exits(  # noqa: PLR0913
     bar: int,
     entry_bar: int,
-    df: pd.DataFrame,
+    ctx: _SimContext,
     fixed_stop: float | None,
     fixed_target: float | None,
-    trailing_levels: pd.Series | None,
-    chandelier_levels: pd.Series | None,
-    breakeven_levels: pd.Series | None,
+    trailing_levels: npt.NDArray[np.float64] | None,
+    chandelier_levels: npt.NDArray[np.float64] | None,
+    breakeven_levels: npt.NDArray[np.float64] | None,
 ) -> tuple[str, float] | None:
     """Check all limit-based exits and return the binding one.
 
@@ -424,17 +439,17 @@ def _check_limit_exits(  # noqa: PLR0913
     Args:
         bar: Current bar iloc index.
         entry_bar: Entry bar iloc index.
-        df: OHLCV DataFrame.
+        ctx: Simulation context with numpy arrays.
         fixed_stop: Fixed stop-loss level or None.
         fixed_target: Fixed take-profit level or None.
-        trailing_levels: Trailing stop levels Series or None.
-        chandelier_levels: Chandelier levels Series or None.
-        breakeven_levels: Breakeven levels Series or None.
+        trailing_levels: Trailing stop levels array or None.
+        chandelier_levels: Chandelier levels array or None.
+        breakeven_levels: Breakeven levels array or None.
 
     Returns:
         Tuple of (exit_type, exit_price) or None.
     """
-    # Relative index for per-trade Series (sliced from entry_bar)
+    # Relative index for per-trade arrays (sliced from entry_bar)
     rel = bar - entry_bar
 
     # Collect all stop levels and track which is binding
@@ -442,15 +457,15 @@ def _check_limit_exits(  # noqa: PLR0913
     if fixed_stop is not None:
         stop_levels.append(("stop_loss", fixed_stop))
     if trailing_levels is not None and rel < len(trailing_levels):
-        val = trailing_levels.iloc[rel]
+        val = trailing_levels[rel]
         if not np.isnan(val):
             stop_levels.append(("trailing_stop", float(val)))
     if chandelier_levels is not None and rel < len(chandelier_levels):
-        val = chandelier_levels.iloc[rel]
+        val = chandelier_levels[rel]
         if not np.isnan(val):
             stop_levels.append(("chandelier", float(val)))
     if breakeven_levels is not None and rel < len(breakeven_levels):
-        val = breakeven_levels.iloc[rel]
+        val = breakeven_levels[rel]
         if not np.isnan(val):
             stop_levels.append(("breakeven", float(val)))
 
@@ -462,9 +477,9 @@ def _check_limit_exits(  # noqa: PLR0913
         binding_stop_type = binding[0]
         effective_stop = binding[1]
 
-    high = float(df["High"].iloc[bar])
-    low = float(df["Low"].iloc[bar])
-    open_price = float(df["Open"].iloc[bar])
+    high = float(ctx.high_arr[bar])
+    low = float(ctx.low_arr[bar])
+    open_price = float(ctx.open_arr[bar])
 
     exit_type, exit_price = check_limit_exit(high, low, open_price, effective_stop, fixed_target)
 
@@ -492,13 +507,13 @@ def _check_indicator_exits(
     Returns:
         True if an indicator exit is triggered.
     """
-    if ctx.shifted_indicator_exits.iloc[bar]:
+    if ctx.ind_exit_arr[bar]:
         return True
 
     # Check opposite_entry: any exit gene with opposite_entry=True triggers
     # when entry conditions no longer hold at close of previous bar
     has_opposite = any(g.opposite_entry for g in genome.indicator_exits if g.enabled)
-    if has_opposite and bar >= 1 and not ctx.raw_entry_signals.iloc[bar - 1]:
+    if has_opposite and bar >= 1 and not ctx.raw_entry_arr[bar - 1]:
         return True
 
     return False
