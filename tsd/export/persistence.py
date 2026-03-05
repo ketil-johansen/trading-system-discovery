@@ -21,6 +21,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from tsd.analysis.reports import PerformanceReport, save_report
 from tsd.analysis.robustness import (
     BootstrapCIResult,
     PermutationTestResult,
@@ -93,6 +94,7 @@ class RunManifest:
     walkforward_path: Path | None
     robustness_path: Path | None
     trades_path: Path | None
+    report_path: Path | None
     log_path: Path
 
 
@@ -414,13 +416,14 @@ def save_run_log(
 # ---------------------------------------------------------------------------
 
 
-def save_run(
+def save_run(  # noqa: PLR0913
     run_id: str,
     results_dir: Path,
     pipeline_result: PipelineResult | None = None,
     walkforward_result: WalkForwardResult | None = None,
     robustness_result: RobustnessResult | None = None,
     backtest_result: BacktestResult | None = None,
+    report: PerformanceReport | None = None,
 ) -> RunManifest:
     """Save all results for a run and return a manifest.
 
@@ -431,6 +434,7 @@ def save_run(
         walkforward_result: Walk-forward validation output.
         robustness_result: Statistical robustness output.
         backtest_result: Backtest with trade records.
+        report: Performance report to save alongside results.
 
     Returns:
         RunManifest with paths to all saved files.
@@ -440,6 +444,7 @@ def save_run(
     walkforward_path: Path | None = None
     robustness_path: Path | None = None
     trades_path: Path | None = None
+    report_path: Path | None = None
     log_path = results_dir / "logs" / f"{run_id}.jsonl"
 
     # Save genome from pipeline or walkforward best
@@ -474,6 +479,9 @@ def save_run(
         _save_trades_parquet(backtest_result.trades, trades_path)
         LOGGER.info("Saved %d trades to %s", len(backtest_result.trades), trades_path)
 
+    if report:
+        report_path = save_report(report, results_dir)
+
     # Log the save event
     save_run_log(
         results_dir,
@@ -484,6 +492,7 @@ def save_run(
             "has_walkforward": walkforward_result is not None,
             "has_robustness": robustness_result is not None,
             "has_trades": backtest_result is not None,
+            "has_report": report is not None,
         },
     )
 
@@ -495,6 +504,7 @@ def save_run(
         walkforward_path=walkforward_path,
         robustness_path=robustness_path,
         trades_path=trades_path,
+        report_path=report_path,
         log_path=log_path,
     )
 
@@ -534,6 +544,7 @@ def load_run(run_id: str, results_dir: Path) -> RunManifest:
         "walkforward_path",
         "robustness_path",
         "trades_path",
+        "report_path",
         "log_path",
     }
     for field_name in path_fields:
