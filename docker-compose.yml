@@ -10,6 +10,7 @@ services:
         - ./config:/app/config:ro
         - ./data:/app/data
         - ./results:/app/results
+        - ./pyproject.toml:/app/pyproject.toml:ro
       environment:
         - TSD_LOG_LEVEL=${TSD_LOG_LEVEL:-INFO}
         - TSD_POPULATION_SIZE=${TSD_POPULATION_SIZE:-100}

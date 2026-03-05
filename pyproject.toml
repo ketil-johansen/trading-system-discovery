@@ -42,6 +42,7 @@ check_untyped_defs = true
 module = [
     "deap.*",
     "optuna.*",
+    "pyarrow.*",
     "vectorbt.*",
     "ta.*",
     "yfinance.*",
