@@ -22,6 +22,7 @@ services:
         - TSD_N_TRIALS=${TSD_N_TRIALS:-100}
         - TSD_FITNESS_MIN_TRADES=${TSD_FITNESS_MIN_TRADES:-10}
         - TSD_FITNESS_MIN_WIN_RATE=${TSD_FITNESS_MIN_WIN_RATE:-0.80}
+        - TSD_FITNESS_TARGET_TRADES=${TSD_FITNESS_TARGET_TRADES:-50}
         - TSD_DATA_DIR=/app/data
         - TSD_RESULTS_DIR=/app/results
         - TSD_CONFIG_DIR=/app/config
