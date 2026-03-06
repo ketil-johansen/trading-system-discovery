@@ -247,7 +247,8 @@ def _make_objective(  # noqa: PLR0913
             return 0.0
 
         aggregated = aggregate_metrics(results)
-        return compute_fitness(aggregated, fitness_config)
+        all_trades = tuple(t for r in results for t in r.trades)
+        return compute_fitness(aggregated, fitness_config, trades=all_trades)
 
     return objective
 
