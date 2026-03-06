@@ -46,12 +46,16 @@ class EvaluatorConfig:
         round_trip_cost_pct: Round-trip transaction cost as percentage.
         atr_period: ATR period for exit level calculations.
         max_trades_per_stock: Maximum trades per stock before early exit.
+        max_holding_days: Hard cap on holding period in trading days.
+            Positions are force-exited at close after this many bars.
+            0 means no cap.
     """
 
     notional_per_trade: float = 10_000.0
     round_trip_cost_pct: float = 0.20
     atr_period: int = 14
     max_trades_per_stock: int = 200
+    max_holding_days: int = 63
 
 
 @dataclass(frozen=True)
@@ -249,6 +253,57 @@ def run_backtest(
 # ---------------------------------------------------------------------------
 
 
+@dataclass
+class _ExitLevels:
+    """Precomputed exit levels for a single trade."""
+
+    fixed_stop: float | None = None
+    fixed_target: float | None = None
+    trailing_levels: npt.NDArray[np.float64] | None = None
+    chandelier_levels: npt.NDArray[np.float64] | None = None
+    breakeven_levels: npt.NDArray[np.float64] | None = None
+    time_exit_signals: npt.NDArray[np.bool_] | None = None
+
+
+def _compute_exit_levels(
+    genome: StrategyGenome,
+    ctx: _SimContext,
+    bar: int,
+    entry_price: float,
+    atr_at_entry: float,
+) -> _ExitLevels:
+    """Compute all exit levels for a new trade."""
+    limits = genome.limit_exits
+    levels = _ExitLevels()
+    if limits.stop_loss.enabled:
+        levels.fixed_stop = compute_stop_loss_level(entry_price, limits.stop_loss, atr_at_entry)
+    if limits.take_profit.enabled:
+        levels.fixed_target = compute_take_profit_level(entry_price, limits.take_profit, atr_at_entry)
+    if limits.trailing_stop.enabled:
+        levels.trailing_levels = compute_trailing_stop_levels(
+            entry_price,
+            limits.trailing_stop,
+            ctx.high_arr[bar:],
+            ctx.atr_arr[bar:],
+        )
+    if limits.chandelier.enabled:
+        levels.chandelier_levels = compute_chandelier_levels(
+            limits.chandelier,
+            ctx.high_arr[bar:],
+            ctx.atr_arr[bar:],
+            0,
+        )
+    if limits.breakeven.enabled:
+        levels.breakeven_levels = compute_breakeven_level(
+            entry_price,
+            limits.breakeven,
+            ctx.high_arr[bar:],
+            atr_at_entry,
+        )
+    levels.time_exit_signals = generate_time_exit_signal(genome.time_exits, bar, ctx.df)
+    return levels
+
+
 def _simulate_trades(
     genome: StrategyGenome,
     ctx: _SimContext,
@@ -265,76 +320,43 @@ def _simulate_trades(
     df = ctx.df
     n_bars = len(df)
     max_trades = ctx.config.max_trades_per_stock
+    max_hold = ctx.config.max_holding_days
     trades: list[TradeRecord] = []
 
     in_position = False
     entry_bar = 0
     entry_price = 0.0
-    # Per-trade exit data (set when opening a position)
-    fixed_stop: float | None = None
-    fixed_target: float | None = None
-    trailing_levels: npt.NDArray[np.float64] | None = None
-    chandelier_levels: npt.NDArray[np.float64] | None = None
-    breakeven_levels: npt.NDArray[np.float64] | None = None
-    time_exit_signals: npt.NDArray[np.bool_] | None = None
+    levels = _ExitLevels()
 
     for bar in range(n_bars):
         if not in_position:
             if ctx.entry_arr[bar] and not np.isnan(ctx.atr_arr[bar]):
-                # Open position at this bar's Open
                 in_position = True
                 entry_bar = bar
                 entry_price = ctx.open_arr[bar]
-                atr_at_entry = ctx.atr_arr[bar]
-
-                # Compute exit levels for this trade
-                limits = genome.limit_exits
-                fixed_stop = None
-                fixed_target = None
-                trailing_levels = None
-                chandelier_levels = None
-                breakeven_levels = None
-
-                if limits.stop_loss.enabled:
-                    fixed_stop = compute_stop_loss_level(entry_price, limits.stop_loss, atr_at_entry)
-                if limits.take_profit.enabled:
-                    fixed_target = compute_take_profit_level(entry_price, limits.take_profit, atr_at_entry)
-                if limits.trailing_stop.enabled:
-                    trailing_levels = compute_trailing_stop_levels(
-                        entry_price,
-                        limits.trailing_stop,
-                        ctx.high_arr[bar:],
-                        ctx.atr_arr[bar:],
-                    )
-                if limits.chandelier.enabled:
-                    chandelier_levels = compute_chandelier_levels(
-                        limits.chandelier,
-                        ctx.high_arr[bar:],
-                        ctx.atr_arr[bar:],
-                        0,
-                    )
-                if limits.breakeven.enabled:
-                    breakeven_levels = compute_breakeven_level(
-                        entry_price,
-                        limits.breakeven,
-                        ctx.high_arr[bar:],
-                        atr_at_entry,
-                    )
-
-                # Compute time exit signals for this trade
-                time_exit_signals = generate_time_exit_signal(genome.time_exits, bar, df)
+                levels = _compute_exit_levels(genome, ctx, bar, entry_price, ctx.atr_arr[bar])
         else:
+            # Hard cap on holding period
+            if max_hold > 0 and (bar - entry_bar) >= max_hold:
+                exit_price = ctx.close_arr[bar]
+                trade = _build_trade_record(entry_bar, entry_price, bar, exit_price, "max_holding", df, ctx.config)
+                trades.append(trade)
+                in_position = False
+                if len(trades) >= max_trades:
+                    break
+                continue
+
             exit_result = _check_all_exits(
                 bar=bar,
                 entry_bar=entry_bar,
                 entry_price=entry_price,
                 ctx=ctx,
-                fixed_stop=fixed_stop,
-                fixed_target=fixed_target,
-                trailing_levels=trailing_levels,
-                chandelier_levels=chandelier_levels,
-                breakeven_levels=breakeven_levels,
-                time_exit_signals=time_exit_signals,
+                fixed_stop=levels.fixed_stop,
+                fixed_target=levels.fixed_target,
+                trailing_levels=levels.trailing_levels,
+                chandelier_levels=levels.chandelier_levels,
+                breakeven_levels=levels.breakeven_levels,
+                time_exit_signals=levels.time_exit_signals,
                 genome=genome,
             )
             if exit_result is not None:
