@@ -19,7 +19,7 @@ from tsd.analysis.robustness import RobustnessConfig, assess_robustness
 from tsd.config import CORE_INDICATORS, Config, load_config
 from tsd.data.loader import load_market_data
 from tsd.export.persistence import generate_run_id, save_run
-from tsd.optimization.fitness import FitnessConfig
+from tsd.optimization.fitness import load_fitness_config
 from tsd.optimization.ga import GAConfig, load_ga_config
 from tsd.optimization.pipeline import PipelineConfig, run_pipeline
 from tsd.strategy.evaluator import (
@@ -170,7 +170,7 @@ def _run_pipeline(config: Config, run_id: str, ga_config: GAConfig) -> int:
         pipeline_config=PipelineConfig(mode=config.pipeline_mode),
         ga_config=ga_config,
         eval_config=EvaluatorConfig(),
-        fitness_config=FitnessConfig(),
+        fitness_config=load_fitness_config(),
     )
     LOGGER.info(
         "Optimization complete: best_fitness=%.4f",
