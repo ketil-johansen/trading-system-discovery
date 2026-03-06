@@ -713,3 +713,17 @@ class TestOppositeEntry:
         assert trade.exit_type == "indicator"
         # Exit at bar 20 (first bar after entry where raw_entry[bar-1]=False)
         assert trade.exit_bar == 20
+
+    def test_max_holding_days_force_exit(self) -> None:
+        """Position force-exited after max_holding_days bars."""
+        genome = _make_genome()
+        df = _make_df(80)
+        entries = pd.Series(False, index=df.index, dtype=bool)
+        entries.iloc[14] = True  # Signal at bar 14, position opens bar 15
+
+        config = EvaluatorConfig(max_holding_days=10)
+        result = _run_with_mocks(genome, df, entries, config=config)
+        assert result.metrics.num_trades == 1
+        trade = result.trades[0]
+        assert trade.exit_type == "max_holding"
+        assert trade.exit_bar == 25  # entry_bar=15 + 10 = bar 25

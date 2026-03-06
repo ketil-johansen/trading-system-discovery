@@ -26,7 +26,7 @@ exits:
     trigger_atr_multiple: { type: float, min: 0.5, max: 4.0, default: 1.5 }
 
 time_exits:
-  max_days: { type: int, min: 1, max: 30, default: 10 }
+  max_days: { type: int, min: 5, max: 90, default: 20 }
   weekday: { type: int, min: 0, max: 4, default: 4 }
   stagnation_days: { type: int, min: 2, max: 15, default: 5 }
   stagnation_threshold: { type: float, min: 0.1, max: 5.0, default: 1.0 }
