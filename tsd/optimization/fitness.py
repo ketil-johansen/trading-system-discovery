@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from tsd.config import env_float, env_int
 from tsd.strategy.evaluator import BacktestMetrics
 
 
@@ -22,9 +23,17 @@ class FitnessConfig:
         require_net_profitable: Whether net profit must be positive.
     """
 
-    min_trades: int = 30
+    min_trades: int = 10
     min_win_rate: float = 0.80
     require_net_profitable: bool = True
+
+
+def load_fitness_config() -> FitnessConfig:
+    """Load fitness configuration from environment variables."""
+    return FitnessConfig(
+        min_trades=env_int("TSD_FITNESS_MIN_TRADES", 10),
+        min_win_rate=env_float("TSD_FITNESS_MIN_WIN_RATE", 0.80),
+    )
 
 
 def compute_fitness(

@@ -6,7 +6,7 @@ from tsd.optimization.bayesian import (
     load_bayesian_config,
     run_bayesian,
 )
-from tsd.optimization.fitness import FitnessConfig, compute_fitness
+from tsd.optimization.fitness import FitnessConfig, compute_fitness, load_fitness_config
 from tsd.optimization.ga import (
     GAConfig,
     GAResult,
@@ -51,6 +51,7 @@ __all__ = [
     "empty_metrics",
     "generate_windows",
     "load_bayesian_config",
+    "load_fitness_config",
     "load_ga_config",
     "load_pipeline_config",
     "load_walkforward_config",

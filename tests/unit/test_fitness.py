@@ -59,7 +59,7 @@ class TestComputeFitness:
 
     def test_fails_min_trades(self) -> None:
         """Returns 0.0 when trades below minimum."""
-        metrics = _make_metrics(num_trades=10, win_rate=0.90, net_profit=5000.0)
+        metrics = _make_metrics(num_trades=5, win_rate=0.90, net_profit=5000.0)
         assert compute_fitness(metrics) == 0.0
 
     def test_fails_net_profit(self) -> None:
