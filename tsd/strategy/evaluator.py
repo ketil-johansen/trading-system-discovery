@@ -52,7 +52,7 @@ class EvaluatorConfig:
     """
 
     notional_per_trade: float = 10_000.0
-    round_trip_cost_pct: float = 0.20
+    round_trip_cost_pct: float = 0.30
     atr_period: int = 14
     max_trades_per_stock: int = 200
     max_holding_days: int = 63

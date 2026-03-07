@@ -25,7 +25,7 @@ from tsd.optimization.ga import (
     run_ga,
 )
 from tsd.optimization.metrics import aggregate_metrics
-from tsd.strategy.evaluator import BacktestMetrics, BacktestResult, EvaluatorConfig
+from tsd.strategy.evaluator import BacktestMetrics, BacktestResult, EvaluatorConfig, TradeRecord
 from tsd.strategy.genome import (
     StrategyMeta,
     genome_length,
@@ -58,6 +58,34 @@ def genome_flat(meta: StrategyMeta) -> list[float]:
     return genome_to_flat(genome, meta)
 
 
+def _make_trades(num_trades: int) -> tuple[TradeRecord, ...]:
+    """Generate synthetic trades spread across multiple years."""
+    years = range(2018, 2024)
+    trades = []
+    for i in range(num_trades):
+        year = list(years)[i % len(years)]
+        month = (i % 12) + 1
+        is_win = i < num_trades * 0.9
+        trades.append(
+            TradeRecord(
+                entry_bar=i * 10,
+                entry_date=f"{year}-{month:02d}-15",
+                entry_price=100.0,
+                exit_bar=i * 10 + 5,
+                exit_date=f"{year}-{month:02d}-20",
+                exit_price=102.0 if is_win else 98.0,
+                exit_type="take_profit" if is_win else "stop_loss",
+                gross_return_pct=0.02 if is_win else -0.02,
+                cost_pct=0.003,
+                net_return_pct=0.017 if is_win else -0.023,
+                net_profit=170.0 if is_win else -230.0,
+                is_win=is_win,
+                holding_days=5,
+            )
+        )
+    return tuple(trades)
+
+
 def _make_backtest_result(
     num_trades: int = 50,
     num_wins: int = 42,
@@ -67,7 +95,7 @@ def _make_backtest_result(
     num_losses = num_trades - num_wins
     win_rate = num_wins / num_trades if num_trades > 0 else 0.0
     return BacktestResult(
-        trades=(),
+        trades=_make_trades(num_trades),
         metrics=BacktestMetrics(
             num_trades=num_trades,
             num_wins=num_wins,
@@ -301,7 +329,7 @@ class TestEvaluateIndividual:
                 stocks_data,
                 indicator_outputs,
                 EvaluatorConfig(),
-                FitnessConfig(),
+                FitnessConfig(max_rate=20.0),
             )
         assert isinstance(fitness, tuple)
         assert len(fitness) == 1

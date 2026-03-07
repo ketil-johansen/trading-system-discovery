@@ -664,7 +664,12 @@ def _evaluate_individual(
 
     aggregated = aggregate_metrics(results)
     all_trades = tuple(t for r in results for t in r.trades)
-    fitness = compute_fitness(aggregated, fitness_config, trades=all_trades)
+    fitness = compute_fitness(
+        aggregated,
+        fitness_config,
+        trades=all_trades,
+        num_stocks=len(stocks_data),
+    )
 
     if _eval_counter is not None and _eval_total is not None:
         with _eval_counter.get_lock():
